@@ -13,8 +13,6 @@ import (
 )
 
 func GetResourceSchema(resourceType, apiVersion, path string) (string, error) {
-	//sometimes the agent would pass `body` in the path, we need to trim it
-	path = strings.TrimPrefix(path, "body.")
 	t, err := getResourceType(resourceType, apiVersion, path)
 	if err != nil {
 		return "", err

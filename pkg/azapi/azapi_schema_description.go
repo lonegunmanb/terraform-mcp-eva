@@ -8,8 +8,6 @@ import (
 )
 
 func GetResourceSchemaDescription(resourceType, apiVersion, path string) (any, error) {
-	//sometimes the agent would pass `body` in the path, we need to trim it
-	path = strings.TrimPrefix(path, "body.")
 	apiType, err := azapi.GetAzApiType(resourceType, apiVersion)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get azapi type for resource %s api-version %s: %w", resourceType, apiVersion, err)
@@ -25,6 +23,9 @@ func GetResourceSchemaDescription(resourceType, apiVersion, path string) (any, e
 			return nil, fmt.Errorf("failed to convert property %s: %w", n, err)
 		}
 		result[n] = desc
+	}
+	result = map[string]any{
+		"body": result,
 	}
 	if path == "" {
 		return result, nil

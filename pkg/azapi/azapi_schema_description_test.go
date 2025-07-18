@@ -11,8 +11,10 @@ func TestQueryAzapiSchemaDesc_EnumAsPossibleValues(t *testing.T) {
 	require.NoError(t, err)
 	descriptions, ok := m.(map[string]any)
 	require.True(t, ok)
-	require.Contains(t, descriptions, "properties")
-	properties := descriptions["properties"].(map[string]any)
+	require.Contains(t, descriptions, "body")
+	body, ok := descriptions["body"].(map[string]any)
+	require.True(t, ok)
+	properties := body["properties"].(map[string]any)
 	require.Contains(t, properties, "publicNetworkAccess")
 	publicNetworkAccess, ok := properties["publicNetworkAccess"].(string)
 	require.True(t, ok)
@@ -20,7 +22,7 @@ func TestQueryAzapiSchemaDesc_EnumAsPossibleValues(t *testing.T) {
 }
 
 func TestQueryAzapiSchemaDesc_WithPathToProperty(t *testing.T) {
-	descriptions, err := GetResourceSchemaDescription("Microsoft.CognitiveServices/accounts", "2025-06-01", "properties.publicNetworkAccess")
+	descriptions, err := GetResourceSchemaDescription("Microsoft.CognitiveServices/accounts", "2025-06-01", "body.properties.publicNetworkAccess")
 	require.NoError(t, err)
 	desc, ok := descriptions.(string)
 	require.True(t, ok)
@@ -28,7 +30,7 @@ func TestQueryAzapiSchemaDesc_WithPathToProperty(t *testing.T) {
 }
 
 func TestQueryAzapiSchemaDesc_WithPathToObject(t *testing.T) {
-	descriptions, err := GetResourceSchemaDescription("Microsoft.CognitiveServices/accounts", "2025-06-01", "properties.encryption")
+	descriptions, err := GetResourceSchemaDescription("Microsoft.CognitiveServices/accounts", "2025-06-01", "body.properties.encryption")
 	require.NoError(t, err)
 	desc, ok := descriptions.(map[string]any)
 	require.True(t, ok)
@@ -42,7 +44,7 @@ func TestQueryAzapiSchemaDesc_WithPathToObject(t *testing.T) {
 }
 
 func TestQueryAzapiSchemaDesc_Readonly(t *testing.T) {
-	dateCreated, err := GetResourceSchemaDescription("Microsoft.CognitiveServices/accounts", "2025-06-01", "properties.dateCreated")
+	dateCreated, err := GetResourceSchemaDescription("Microsoft.CognitiveServices/accounts", "2025-06-01", "body.properties.dateCreated")
 	require.NoError(t, err)
 	desc, ok := dateCreated.(string)
 	require.True(t, ok)
