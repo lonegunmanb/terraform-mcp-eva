@@ -1,4 +1,4 @@
-name: cronjob
+name: image-build
 
 on:
   push:

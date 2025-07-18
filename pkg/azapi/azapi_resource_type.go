@@ -4,14 +4,17 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"strings"
+
 	tfjson "github.com/hashicorp/terraform-json"
 	"github.com/lonegunmanb/newres/v3/pkg/azapi"
 	"github.com/ms-henglu/go-azure-types/types"
 	"github.com/zclconf/go-cty/cty"
-	"strings"
 )
 
 func GetResourceSchema(resourceType, apiVersion, path string) (string, error) {
+	//sometimes the agent would pass `body` in the path, we need to trim it
+	path = strings.TrimPrefix(path, "body.")
 	t, err := getResourceType(resourceType, apiVersion, path)
 	if err != nil {
 		return "", err
