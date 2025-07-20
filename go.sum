@@ -10,6 +10,16 @@ github.com/hashicorp/terraform-json v0.25.0 h1:rmNqc/CIfcWawGiwXmRuiXJKEiJu1ntGo
 github.com/hashicorp/terraform-json v0.25.0/go.mod h1:sMKS8fiRDX4rVlR6EJUMudg1WcanxCMoWwTLkgZP/vc=
 github.com/lonegunmanb/newres/v3 v3.0.0-20250716024827-64a0d3c6604c h1:kyD6/zHVazbYd5ZECe9LwVzJY0tbv3HOs8YAp7vrggk=
 github.com/lonegunmanb/newres/v3 v3.0.0-20250716024827-64a0d3c6604c/go.mod h1:QuKFefBBbtNxo5hxbO6JKsJB3hVgDvF+/OeGapvhtoo=
+github.com/lonegunmanb/terraform-aws-schema/v6 v6.4.0 h1:Du0iwhdcUDLofsasJTS3N7tlAt+FEdaeWZ44q3sT7U8=
+github.com/lonegunmanb/terraform-aws-schema/v6 v6.4.0/go.mod h1:PzejNn3seOfagL7ltKESgqmBF7dry/OstCxxdxIHdEc=
+github.com/lonegunmanb/terraform-awscc-schema v1.49.0 h1:grFHQHv/zbMmJQsartxKEKAfOTHeYWu4a+P4ZXjNcGI=
+github.com/lonegunmanb/terraform-awscc-schema v1.49.0/go.mod h1:qtPFv1JcZ+QKFTqg0Gwtch3ifVnvvjgh10GkllmdxRs=
+github.com/lonegunmanb/terraform-azuread-schema/v3 v3.2.0 h1:rBJTDA1VAaRWgoQdXBYSN1heei/iO3ltswU+yTbGfeY=
+github.com/lonegunmanb/terraform-azuread-schema/v3 v3.2.0/go.mod h1:dKCODMPy1R45mqszOXd94wp1mNTzT9Ponv3EdAvfRF0=
+github.com/lonegunmanb/terraform-azurerm-schema/v4 v4.37.0 h1:lR4Oc8ANczJ843NPnQSoOio+MydgHK4p+oML3FueZ2U=
+github.com/lonegunmanb/terraform-azurerm-schema/v4 v4.37.0/go.mod h1:F8TtABaQh3Keb9ddbJuTQaokmM1HlGC7yeFTc4fn3PQ=
+github.com/lonegunmanb/terraform-google-schema/v6 v6.44.0 h1:eumGpRmkZ5ddohEUnqM9tDuZlMOneXlJPrNjtI8LV0k=
+github.com/lonegunmanb/terraform-google-schema/v6 v6.44.0/go.mod h1:XbKxTdcxNp+tYBN6Pz8Dl2qpoVfvm2DV18YPuP6v1rc=
 github.com/modelcontextprotocol/go-sdk v0.2.0 h1:PESNYOmyM1c369tRkzXLY5hHrazj8x9CY1Xu0fLCryM=
 github.com/modelcontextprotocol/go-sdk v0.2.0/go.mod h1:0sL9zUKKs2FTTkeCCVnKqbLJTw5TScefPAzojjU459E=
 github.com/ms-henglu/go-azure-types v0.0.0-20250710084755-17c1d17a45e4 h1:k3puBxt7+je2Pdw/yg9jIYfHkmYAeI18i5EHt1jFRis=

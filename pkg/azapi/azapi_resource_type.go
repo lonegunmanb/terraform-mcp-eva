@@ -1,8 +1,6 @@
 package azapi
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -52,10 +50,7 @@ func getResourceType(resourceType, apiVersion, path string) (cty.Type, error) {
 }
 
 func compactGoType(goType string) string {
-	goType = strings.ReplaceAll(goType, "cty.", "")
-	//goType = strings.ReplaceAll(goType, "ObjectWithOptionalAttrs(map", "OObj(map")
-	//goType = strings.ReplaceAll(goType, "Object(map", "Obj(map")
-	return goType
+	return strings.ReplaceAll(goType, "cty.", "")
 }
 
 func toCtyType(block *tfjson.SchemaBlock) (cty.Type, error) {
@@ -161,16 +156,4 @@ func queryTypeFromType(t cty.Type, path string) (cty.Type, error) {
 		}
 	}
 	return cty.NilType, fmt.Errorf("type not found for path %s in type %s", path, t.FriendlyName())
-}
-
-func toCompactJson(data interface{}) (string, error) {
-	marshal, err := json.Marshal(data)
-	if err != nil {
-		return "", fmt.Errorf("failed to marshal data: %+v", err)
-	}
-	dst := &bytes.Buffer{}
-	if err = json.Compact(dst, marshal); err != nil {
-		return "", fmt.Errorf("failed to compact data: %+v", err)
-	}
-	return dst.String(), nil
 }

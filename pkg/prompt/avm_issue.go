@@ -41,7 +41,7 @@ If you are about to create new example under 'examples' directory, please ask fo
 2. ./avm pre-commit (or './avm.bat pre-commit' if you on Windows').
 3. the following sub-checks: ['tfvalidatecheck', 'lint'] with './avm ' or './avm.bat
 If checks succeeds too then you can propose creating a Pull Request (PR). If it fails, report the failure message, try to solve the issues with best effort.
-Now, please begin execution.`, category, issueNumber),
+Now, please begin execution.`, issueNumber, category),
 					},
 					Role: "user",
 				},
