@@ -50,3 +50,11 @@ func TestQueryAzapiSchemaDesc_Readonly(t *testing.T) {
 	require.True(t, ok)
 	assert.Contains(t, desc, "ReadOnly")
 }
+
+func TestQueryAzapiSchemaDesc_NonApiAttribute_RetryErrorMessageRegex(t *testing.T) {
+	description, err := GetResourceSchemaDescription("Microsoft.CognitiveServices/accounts", "2025-06-01", "retry.error_message_regex")
+	require.NoError(t, err)
+	desc, ok := description.(string)
+	require.True(t, ok)
+	assert.Equal(t, "A list of regular expressions to match against error messages. If any of the regular expressions match, the request will be retried.", desc)
+}

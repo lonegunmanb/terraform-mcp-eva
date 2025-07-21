@@ -2,12 +2,42 @@ package azapi
 
 import (
 	"fmt"
+	tfjson "github.com/hashicorp/terraform-json"
 	"github.com/lonegunmanb/newres/v3/pkg/azapi"
+	azapi_resource "github.com/lonegunmanb/terraform-azapi-schema/v2/generated"
 	"github.com/ms-henglu/go-azure-types/types"
 	"strings"
 )
 
 func GetResourceSchemaDescription(resourceType, apiVersion, path string) (any, error) {
+	// Get swagger resource descriptions
+	swaggerDescriptions, err := getSwaggerResourceDescriptions(resourceType, apiVersion)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get azapi resource schema descriptions
+	azapiDescriptions, err := getAzapiResourceDescriptions()
+	if err != nil {
+		return nil, err
+	}
+
+	// Merge descriptions
+	mergedDescriptions := make(map[string]any)
+	for k, v := range swaggerDescriptions {
+		mergedDescriptions[k] = v
+	}
+	for k, v := range azapiDescriptions {
+		mergedDescriptions[k] = v
+	}
+
+	if path == "" {
+		return mergedDescriptions, nil
+	}
+	return queryDescriptionInObject(mergedDescriptions, path)
+}
+
+func getSwaggerResourceDescriptions(resourceType, apiVersion string) (map[string]any, error) {
 	apiType, err := azapi.GetAzApiType(resourceType, apiVersion)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get azapi type for resource %s api-version %s: %w", resourceType, apiVersion, err)
@@ -24,13 +54,54 @@ func GetResourceSchemaDescription(resourceType, apiVersion, path string) (any, e
 		}
 		result[n] = desc
 	}
-	result = map[string]any{
+	return map[string]any{
 		"body": result,
+	}, nil
+}
+
+func getAzapiResourceDescriptions() (map[string]any, error) {
+	schema := azapi_resource.Resources["azapi_resource"]
+	return convertSchemaBlockToDescriptionMap(schema.Block), nil
+}
+
+func convertSchemaBlockToDescriptionMap(block *tfjson.SchemaBlock) map[string]any {
+	result := make(map[string]any)
+
+	// Add attributes
+	for name, attr := range block.Attributes {
+		if attr.Description != "" {
+			if attr.AttributeNestedType != nil {
+				result[name] = convertNestedAttributeToDescriptionMap(attr.AttributeNestedType)
+			} else {
+				result[name] = attr.Description
+			}
+		}
 	}
-	if path == "" {
-		return result, nil
+
+	// Add nested blocks
+	for name, nestedBlock := range block.NestedBlocks {
+		if nestedBlock.Block != nil {
+			result[name] = convertSchemaBlockToDescriptionMap(nestedBlock.Block)
+		}
 	}
-	return queryDescriptionInObject(result, path)
+
+	return result
+}
+
+func convertNestedAttributeToDescriptionMap(nestedType *tfjson.SchemaNestedAttributeType) map[string]any {
+	result := make(map[string]any)
+
+	for name, attr := range nestedType.Attributes {
+		if attr.Description != "" {
+			if attr.AttributeNestedType != nil {
+				result[name] = convertNestedAttributeToDescriptionMap(attr.AttributeNestedType)
+			} else {
+				result[name] = attr.Description
+			}
+		}
+	}
+
+	return result
 }
 
 func queryDescriptionInObject(result map[string]any, path string) (any, error) {
