@@ -23,11 +23,8 @@ func GetResourceSchemaDescription(resourceType, apiVersion, path string) (any, e
 	}
 
 	// Merge descriptions
-	mergedDescriptions := make(map[string]any)
+	mergedDescriptions := azapiDescriptions
 	for k, v := range swaggerDescriptions {
-		mergedDescriptions[k] = v
-	}
-	for k, v := range azapiDescriptions {
 		mergedDescriptions[k] = v
 	}
 
