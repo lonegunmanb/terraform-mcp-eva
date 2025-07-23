@@ -38,9 +38,12 @@ If you want to create or update Terraform blocks, you must consul the mcp server
 After the user has agreed with your plan, you can make all necessary code changes to resolve the issue. Remember to update the 'todo.md' file with the progress you made.
 If you are about to create new example under 'examples' directory, please ask for permission first. Don't forget to add '_footer.md' and '_header.md' files like other examples.'
 [CRITICAL STEP] After all changes are complete, you must execute:
-1. ./avm pre-commit (or './avm.bat pre-commit' if you on Windows').
-2. the following sub-checks: ['tfvalidatecheck', 'lint'] with './avm ' or './avm.bat
-If checks succeeds too then you can propose creating a Pull Request (PR). If it fails, report the failure message, try to solve the issues with best effort.
+1. ./avm pre-commit (or './avm.ps1 pre-commit' if you on Windows').
+2. the following sub-checks: ['tfvalidatecheck', 'lint'] with './avm ' or './avm.ps1
+If checks succeeds too then you should:
+
+1. commit the changes with proper commit message, do not commit 'todo.md' file.
+2. propose creating a Pull Request (PR). If it fails, report the failure message, try to solve the issues with best effort.
 Now, please begin execution.`, issueNumber, category),
 					},
 					Role: "user",
