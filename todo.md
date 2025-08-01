@@ -184,10 +184,10 @@ The `index/internal/` directory contains gophon-generated `.goindex` files for a
   - [x] Phase A: Add filtering and validation logic
   - [x] Phase B: Create MCP tool handler and registration
 
-- [ ] **Tool 3: Get Supported Terraform Providers**
-  - [ ] Phase A: Implement provider name extraction (currently "azurerm")
-  - [ ] Phase A: Prepare for future multi-provider support
-  - [ ] Phase B: Create MCP tool handler and registration
+- [x] **Tool 3: Get Supported Terraform Providers**
+  - [x] Phase A: Implement provider name extraction (currently "azurerm")
+  - [x] Phase A: Prepare for future multi-provider support
+  - [x] Phase B: Create MCP tool handler and registration
 
 ### Phase 3: Index Loading & Management
 - [ ] **Implement Index Loading System**

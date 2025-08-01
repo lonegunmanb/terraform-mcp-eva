@@ -30,6 +30,18 @@ func RegisterMcpServer(s *mcp.Server) {
 		Name:        "golang_source_code_server_get_supported_tags",
 	}, tool.QuerySupportedTags)
 
+	// Tool 3: Get Supported Providers
+	mcp.AddTool(s, &mcp.Tool{
+		Annotations: &mcp.ToolAnnotations{
+			DestructiveHint: p(false),
+			IdempotentHint:  true,
+			OpenWorldHint:   p(false),
+			ReadOnlyHint:    true,
+		},
+		Description: "Get all supported Terraform provider names available for source code query. Returns a JSON array of provider name strings like ['azurerm']. Use this tool when you need to: 1) Discover what Terraform providers have been indexed and are available for golang source query, you can study details of provider's behavior, 2) Find available providers before querying specific golang functions, methods, types, variables.",
+		Name:        "terraform_source_code_query_get_supported_providers",
+	}, tool.QuerySupportedProviders)
+
 	mcp.AddTool(s, &mcp.Tool{
 		Annotations: &mcp.ToolAnnotations{
 			DestructiveHint: p(false),
