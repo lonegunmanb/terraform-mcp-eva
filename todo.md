@@ -179,10 +179,10 @@ The `index/internal/` directory contains gophon-generated `.goindex` files for a
   - [x] Phase A: Implement core functions (ListSupportedNamespaces, GetNamespaceBaseURL)
   - [x] Phase B: Create MCP tool handler and registration
 
-- [ ] **Tool 2: Get Supported Tags**
-  - [ ] Phase A: Implement tag discovery functions for specific namespaces
-  - [ ] Phase A: Add filtering and validation logic
-  - [ ] Phase B: Create MCP tool handler and registration
+- [x] **Tool 2: Get Supported Tags**
+  - [x] Phase A: Implement tag discovery functions for specific namespaces
+  - [x] Phase A: Add filtering and validation logic
+  - [x] Phase B: Create MCP tool handler and registration
 
 - [ ] **Tool 3: Get Supported Terraform Providers**
   - [ ] Phase A: Implement provider name extraction (currently "azurerm")
