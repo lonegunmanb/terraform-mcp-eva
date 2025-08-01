@@ -175,9 +175,9 @@ The `index/internal/` directory contains gophon-generated `.goindex` files for a
   - [x] Create utility types for version handling and namespace parsing
 
 ### Phase 2: Core MCP Tools Implementation (NEXT PRIORITY)
-- [ ] **Tool 1: Get Supported Golang Namespaces**
+- [x] **Tool 1: Get Supported Golang Namespaces**
   - [x] Phase A: Implement core functions (ListSupportedNamespaces, GetNamespaceBaseURL)
-  - [ ] Phase B: Create MCP tool handler and registration
+  - [x] Phase B: Create MCP tool handler and registration
 
 - [ ] **Tool 2: Get Supported Tags**
   - [ ] Phase A: Implement tag discovery functions for specific namespaces

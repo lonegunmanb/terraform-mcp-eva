@@ -7,6 +7,18 @@ import (
 )
 
 func RegisterMcpServer(s *mcp.Server) {
+	// Tool 1: Get Supported Golang Namespaces
+	mcp.AddTool(s, &mcp.Tool{
+		Annotations: &mcp.ToolAnnotations{
+			DestructiveHint: p(false),
+			IdempotentHint:  true,
+			OpenWorldHint:   p(false),
+			ReadOnlyHint:    true,
+		},
+		Description: "Get all indexed golang namespaces available for analysis. Returns a JSON array of namespace strings like ['github.com/hashicorp/terraform-provider-azurerm/internal']. Use this tool when you are reading Golang source code and need to: 1) Discover what golang projects/packages have been indexed, 2) Find available namespaces before querying specific code symbols, functions, or types, 3) Understand the scope of indexed golang codebases available for analysis.",
+		Name:        "golang_source_code_server_get_supported_golang_namespaces",
+	}, tool.QuerySupportedGolangNamespaces)
+
 	mcp.AddTool(s, &mcp.Tool{
 		Annotations: &mcp.ToolAnnotations{
 			DestructiveHint: p(false),
