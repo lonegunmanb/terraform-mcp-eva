@@ -41,6 +41,15 @@ func RegisterMcpServer(s *mcp.Server) {
 		Description: "Get all supported Terraform provider names available for source code query. Returns a JSON array of provider name strings like ['azurerm']. Use this tool when you need to: 1) Discover what Terraform providers have been indexed and are available for golang source query, you can study details of provider's behavior, 2) Find available providers before querying specific golang functions, methods, types, variables.",
 		Name:        "terraform_source_code_query_get_supported_providers",
 	}, tool.QuerySupportedProviders)
+	mcp.AddTool(s, &mcp.Tool{
+		Annotations: &mcp.ToolAnnotations{
+			DestructiveHint: p(false),
+			IdempotentHint:  true,
+			OpenWorldHint:   p(false),
+			ReadOnlyHint:    true,
+		},
+		Description: "Read Terraform provider source code for a given Terraform block, if you see `source code not found (404)` in error, it implies that maybe the function or method is not implemented in the provider. Use this tool when you need to: 1) Read the source code of a specific Terraform function or method, 2) How a Terraform Provider calls API, 3) Debug issues related to specific Terraform resource.",
+	}, tool.QueryTerraformSourceCode)
 
 	mcp.AddTool(s, &mcp.Tool{
 		Annotations: &mcp.ToolAnnotations{

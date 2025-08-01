@@ -31,15 +31,15 @@ func TestListSupportedNamespaces(t *testing.T) {
 
 func TestGetNamespaceBaseURL(t *testing.T) {
 	tests := []struct {
-		name          string
-		namespace     string
-		expectedURL   string
-		expectError   bool
+		name        string
+		namespace   string
+		expectedURL string
+		expectError bool
 	}{
 		{
 			name:        "should return base URL for azurerm namespace",
 			namespace:   "github.com/hashicorp/terraform-provider-azurerm/internal",
-			expectedURL: "https://raw.githubusercontent.com/lonegunmanb/terraform-provider-azurerm-index/refs/heads/main/index/internal",
+			expectedURL: "https://raw.githubusercontent.com/lonegunmanb/terraform-provider-azurerm-index/refs/{version}/index",
 			expectError: false,
 		},
 		{
