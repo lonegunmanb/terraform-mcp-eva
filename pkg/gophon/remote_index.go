@@ -15,6 +15,14 @@ const (
 	AzureRMInternal = "github.com/hashicorp/terraform-provider-azurerm/internal"
 )
 
+var Namespaces = func() []string {
+	var s []string
+	for k, _ := range RemoteIndexMap {
+		s = append(s, k)
+	}
+	return s
+}()
+
 var RemoteIndexMap = map[string]RemoteIndex{
 	AzureRMInternal: {
 		GitHubOwner: "lonegunmanb",

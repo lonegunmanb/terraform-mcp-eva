@@ -62,11 +62,7 @@ func readURLContent(url string) ([]byte, error) {
 }
 
 func GetTerraformSourceCode(blockType, terraformType, entrypointName, tag string) (string, error) {
-	if tag == "" {
-		tag = "heads/main"
-	} else {
-		tag = "tags/" + tag
-	}
+	tag = formatVersion(tag)
 	entryPoints, ok := validEntrypoints[blockType]
 	if !ok {
 		return "", fmt.Errorf("invalid block type: %s", blockType)
@@ -109,4 +105,13 @@ func GetTerraformSourceCode(blockType, terraformType, entrypointName, tag string
 		return "", err
 	}
 	return string(sourceCode), nil
+}
+
+func formatVersion(tag string) string {
+	if tag == "" {
+		tag = "heads/main"
+	} else {
+		tag = "tags/" + tag
+	}
+	return tag
 }
