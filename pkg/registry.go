@@ -19,7 +19,6 @@ func RegisterMcpServer(s *mcp.Server) {
 		Name:        "golang_source_code_server_get_supported_golang_namespaces",
 	}, tool.QuerySupportedGolangNamespaces)
 
-	// Tool 2: Get Supported Tags
 	mcp.AddTool(s, &mcp.Tool{
 		Annotations: &mcp.ToolAnnotations{
 			DestructiveHint: p(false),
@@ -29,16 +28,6 @@ func RegisterMcpServer(s *mcp.Server) {
 		},
 		Description: "Get all supported tags/versions for a specific golang namespace. Requires a 'namespace' parameter (string) and returns a JSON array of version tags like ['v4.20.0', 'v4.21.0']. Use this tool when you need to: 1) Discover available versions/tags for a specific golang namespace, 2) Find the latest or specific versions before analyzing code from a particular tag, 3) Understand version history for indexed golang projects.",
 		Name:        "golang_source_code_server_get_supported_tags",
-		InputSchema: &mcp.InputSchema{
-			Type: "object",
-			Properties: map[string]interface{}{
-				"namespace": map[string]interface{}{
-					"type":        "string",
-					"description": "The golang namespace to get tags for (e.g., 'github.com/hashicorp/terraform-provider-azurerm/internal')",
-				},
-			},
-			Required: []string{"namespace"},
-		},
 	}, tool.QuerySupportedTags)
 
 	mcp.AddTool(s, &mcp.Tool{
