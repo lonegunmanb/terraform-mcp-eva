@@ -6,10 +6,10 @@ import (
 )
 
 var validSymbols = map[string]struct{}{
-	"function": {},
-	"method":   {},
-	"type":     {},
-	"var":      {},
+	"func":   {},
+	"method": {},
+	"type":   {},
+	"var":    {},
 }
 
 func GetGolangSourceCode(namespace, symbol, receiver, name, tag string) (string, error) {

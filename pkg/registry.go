@@ -49,6 +49,7 @@ func RegisterMcpServer(s *mcp.Server) {
 			ReadOnlyHint:    true,
 		},
 		Description: "Read Terraform provider source code for a given Terraform block, if you see `source code not found (404)` in error, it implies that maybe the function or method is not implemented in the provider. Use this tool when you need to: 1) Read the source code of a specific Terraform function or method, 2) How a Terraform Provider calls API, 3) Debug issues related to specific Terraform resource.",
+		Name:        "query_terraform_block_implementation_source_code",
 	}, tool.QueryTerraformSourceCode)
 	mcp.AddTool(s, &mcp.Tool{
 		Annotations: &mcp.ToolAnnotations{
@@ -57,7 +58,8 @@ func RegisterMcpServer(s *mcp.Server) {
 			OpenWorldHint:   p(false),
 			ReadOnlyHint:    true,
 		},
-		Description: "Read golang source code for given type, variable, constant, function or method definition, if you see `source code not found (404)` in error, it implies that maybe the function or method is not implemented in the provider, or it could be a variable with function type. `symbol` set to `var` for variable or constant, `type` for type definition including struct, interface or type alias, `func` for function without receiver, `method` for method that has receiver. Use this tool when you need to: 1) You want to see other function, method, type, variable's definition while you're reading golang source code, 2) How a Terraform Provider expand or flatten struct, 3) Debug issues related to specific Terraform resource.",
+		Description: "Read golang source code for given type, variable, constant, function or method definition, if you see `source code not found (404)` in error, it implies that maybe the function or method is not implemented in the provider, or it could be a variable with function type. `symbol` set to `var` for variable or constant, `type` for type definition including struct, interface or type alias, `func` for function without receiver, `method` for method that has receiver. If you want to know how a Terraform resource is implemented, you should call `query_terraform_block_implementation_source_code` before you call this tool. Use this tool when you need to: 1) You want to see other function, method, type, variable's definition while you're reading golang source code, 2) How a Terraform Provider expand or flatten struct, 3) Debug issues related to specific Terraform resource.",
+		Name:        "query_golang_source_code",
 	}, tool.QueryGolangSourceCode)
 
 	mcp.AddTool(s, &mcp.Tool{

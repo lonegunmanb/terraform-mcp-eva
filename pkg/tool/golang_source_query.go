@@ -9,7 +9,7 @@ import (
 )
 
 type GolangSourceCodeQueryParam struct {
-	Namespace string `json:"namespace" jsonschema:"[Required] The golang namespace to query (e.g. 'github.com/hashicorp/terraform-provider-azurerm/internal')"`
+	Namespace string `json:"namespace" jsonschema:"[Required] The golang namespace to query (e.g. 'github.com/hashicorp/terraform-provider-azurerm/internal'). When you are reading golang source code and want to read a specific function, method, type or variable, you need to infer the correct namespace first. To infer the namespace of a given symbol, you must read 'package' declaration in the current golang code, along with all imports, then guess the symbol you'd like to read is in which namespace. The symbol could be placed in a different namespace, it's quite common."`
 	Symbol    string `json:"symbol" jsonschema:"[Required] The symbol you want to read, possible values: 'func', 'method', 'type', 'var'"`
 	Receiver  string `json:"receiver,omitempty" jsonschema:"The type of method receiver, e.g.: 'ContainerAppResource'. Can only be set when symbol is 'method'."`
 	Name      string `json:"name" jsonschema:"[Required] The name of the function, method, type or variable you want to read. For example: 'NewContainerAppResource', 'ContainerAppResource'"`
