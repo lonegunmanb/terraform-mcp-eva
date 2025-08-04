@@ -1,16 +1,17 @@
 # Builder stage
 FROM golang:latest AS builder
-
+ARG TARGETARCH
+ENV GOARCH=${TARGETARCH}
 # Set working directory
-WORKDIR /app
+WORKDIR /src
 
 # Copy source code
 COPY . .
 
 # Download dependencies and build the application using TARGETARCH for multi-platform builds
-ARG TARGETARCH
+
 RUN go mod download && \
-    GOOS=linux GOARCH=${TARGETARCH} CGO_ENABLED=0 go build -o terraform-mcp-eva .
+  GOOS=linux CGO_ENABLED=0 go build -o terraform-mcp-eva .
 
 # Runner stage
 FROM alpine:latest
