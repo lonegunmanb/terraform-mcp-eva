@@ -25,8 +25,8 @@ github.com/lonegunmanb/terraform-azuread-schema/v3 v3.2.0 h1:rBJTDA1VAaRWgoQdXBY
 github.com/lonegunmanb/terraform-azuread-schema/v3 v3.2.0/go.mod h1:dKCODMPy1R45mqszOXd94wp1mNTzT9Ponv3EdAvfRF0=
 github.com/lonegunmanb/terraform-azurerm-schema/v4 v4.38.0 h1:I6bSHrg/R1Nd42dRnyEiEmuiWagQ7mB2gg8iZgwJLTg=
 github.com/lonegunmanb/terraform-azurerm-schema/v4 v4.38.0/go.mod h1:F8TtABaQh3Keb9ddbJuTQaokmM1HlGC7yeFTc4fn3PQ=
-github.com/lonegunmanb/terraform-google-schema/v6 v6.45.0 h1:Mub6t5RmnARlNrBGvW8saJozDyEYKnusw/k1Q5Cc+B0=
-github.com/lonegunmanb/terraform-google-schema/v6 v6.45.0/go.mod h1:XbKxTdcxNp+tYBN6Pz8Dl2qpoVfvm2DV18YPuP6v1rc=
+github.com/lonegunmanb/terraform-google-schema/v6 v6.46.0 h1:6IT7rM819aFL7XzNtnHkXYuU6S3VBRBZiedMU63EPiA=
+github.com/lonegunmanb/terraform-google-schema/v6 v6.46.0/go.mod h1:XbKxTdcxNp+tYBN6Pz8Dl2qpoVfvm2DV18YPuP6v1rc=
 github.com/modelcontextprotocol/go-sdk v0.2.0 h1:PESNYOmyM1c369tRkzXLY5hHrazj8x9CY1Xu0fLCryM=
 github.com/modelcontextprotocol/go-sdk v0.2.0/go.mod h1:0sL9zUKKs2FTTkeCCVnKqbLJTw5TScefPAzojjU459E=
 github.com/ms-henglu/go-azure-types v0.0.0-20250710084755-17c1d17a45e4 h1:k3puBxt7+je2Pdw/yg9jIYfHkmYAeI18i5EHt1jFRis=
