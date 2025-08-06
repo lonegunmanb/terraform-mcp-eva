@@ -1,3 +1,4 @@
+ARG AVM_IMAGE_VERSION=v0.76.0
 # Builder stage
 FROM golang:latest AS builder
 ARG TARGETARCH
@@ -10,11 +11,19 @@ COPY . .
 
 # Download dependencies and build the application using TARGETARCH for multi-platform builds
 
-RUN go mod download && \
-  GOOS=linux CGO_ENABLED=0 go build -o terraform-mcp-eva .
+RUN apt update && apt install -y unzip && \
+  go mod download && \
+  GOOS=linux CGO_ENABLED=0 go build -o terraform-mcp-eva . && \
+  curl -s https://raw.githubusercontent.com/terraform-linters/tflint/master/install_linux.sh | bash
+
+FROM mcr.microsoft.com/azterraform:avm-${AVM_IMAGE_VERSION} AS avm
 
 # Runner stage
 FROM alpine:latest
+
+COPY --from=avm /usr/local/bin/conftest /usr/local/bin/conftest
+COPY --from=avm /usr/local/bin/hclmerge /usr/local/bin/hclmerge
+COPY --from=builder /usr/local/bin/tflint /usr/local/bin/tflint
 
 # Install ca-certificates for HTTPS requests
 RUN apk --no-cache add ca-certificates
