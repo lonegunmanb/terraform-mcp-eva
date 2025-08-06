@@ -7,7 +7,6 @@ import (
 )
 
 func RegisterMcpServer(s *mcp.Server) {
-	// Tool 1: Get Supported Golang Namespaces
 	mcp.AddTool(s, &mcp.Tool{
 		Annotations: &mcp.ToolAnnotations{
 			DestructiveHint: p(false),
@@ -30,7 +29,6 @@ func RegisterMcpServer(s *mcp.Server) {
 		Name:        "golang_source_code_server_get_supported_tags",
 	}, tool.QuerySupportedTags)
 
-	// Tool 3: Get Supported Providers
 	mcp.AddTool(s, &mcp.Tool{
 		Annotations: &mcp.ToolAnnotations{
 			DestructiveHint: p(false),
