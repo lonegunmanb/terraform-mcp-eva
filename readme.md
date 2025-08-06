@@ -15,7 +15,7 @@ This MCP server provides AI agents with powerful tools to query and analyze Terr
 
 ### Using with VS Code
 
-Add this configuration to your VS Code MCP settings:
+Add this configuration to your VS Code MCP settings(make sure that you have permission to mount the current working dir into the container):
 
 ```json
 {
@@ -27,9 +27,9 @@ Add this configuration to your VS Code MCP settings:
                 "run",
                 "-i",
                 "--rm",
-                "-e",
                 "-v",
-                "${workspaceFolder}:/workspace"
+                "${workspaceFolder}:/workspace",
+                "-e",
                 "TRANSPORT_MODE=stdio",
                 "--pull=always",
                 "ghcr.io/lonegunmanb/terraform-mcp-eva"

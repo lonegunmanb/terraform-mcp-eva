@@ -18,6 +18,11 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac #v4.0.0
+      - name: Read version.env
+        id: readenv
+        uses: juliangruber/read-file-action@02bbba9876a8f870efd4ad64e3b9088d3fb94d4b # v1.1.6
+        with:
+          path: ./version.env
       - name: Set up QEMU
         uses: docker/setup-qemu-action@2b82ce82d56a2a04d2637cd93a637ae1b359c0a7 # v2.2.0
       - name: Set up Docker Buildx
@@ -34,6 +39,8 @@ jobs:
         with:
           context: .
           push: true
+          build-args: |
+            ${{ steps.readenv.outputs.content }}
           platforms: |
             linux/amd64
             linux/arm64

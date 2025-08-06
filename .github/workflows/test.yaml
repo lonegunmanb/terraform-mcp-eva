@@ -30,4 +30,4 @@ jobs:
           go test github.com/lonegunmanb/terraform-mcp-eva/...
       - name: Docker build check
         run: |
-          docker build -t test .
+          bash dockerbuild.sh
