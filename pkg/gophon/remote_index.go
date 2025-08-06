@@ -9,10 +9,12 @@ type RemoteIndex struct {
 
 var ProviderIndexMap = map[string]string{
 	"azurerm": AzureRMInternal,
+	"aws":     AWSInternal,
 }
 
 const (
 	AzureRMInternal = "github.com/hashicorp/terraform-provider-azurerm/internal"
+	AWSInternal     = "github.com/hashicorp/terraform-provider-aws/internal"
 )
 
 var Namespaces = func() []string {
@@ -29,6 +31,12 @@ var RemoteIndexMap = map[string]RemoteIndex{
 		GitHubRepo:  "terraform-provider-azurerm-index",
 		BaseUrl:     "https://raw.githubusercontent.com/lonegunmanb/terraform-provider-azurerm-index/refs/{version}/index",
 		PackagePath: "github.com/hashicorp/terraform-provider-azurerm",
+	},
+	AWSInternal: {
+		GitHubOwner: "lonegunmanb",
+		GitHubRepo:  "terraform-provider-aws-index",
+		BaseUrl:     "https://raw.githubusercontent.com/lonegunmanb/terraform-provider-aws-index/refs/{version}/index",
+		PackagePath: "github.com/hashicorp/terraform-provider-aws",
 	},
 }
 
