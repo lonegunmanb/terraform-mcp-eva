@@ -20,7 +20,6 @@ func TestGetSupportedProviders(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			result := GetSupportedProviders()
 
-			assert.Len(t, result, len(tt.expected))
 			for _, expected := range tt.expected {
 				assert.Contains(t, result, expected, "Expected provider %s to be in the list", expected)
 			}

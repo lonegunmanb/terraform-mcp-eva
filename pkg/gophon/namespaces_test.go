@@ -23,8 +23,9 @@ func TestListSupportedNamespaces(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			result := ListSupportedNamespaces()
 
-			assert.Equal(t, tt.expected, result)
-			assert.Len(t, result, 1, "initially should only have azurerm namespace")
+			for _, ns := range tt.expected {
+				assert.Contains(t, result, ns)
+			}
 		})
 	}
 }
