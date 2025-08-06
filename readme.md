@@ -1,6 +1,8 @@
 Terraform MCP Eva
 # Terraform MCP Eva
 
+![](https://raw.githubusercontent.com/lonegunmanb/terraform-mcp-eva/refs/heads/main/eva.png)
+
 Eva stands for "tErraform deVeloper Assistant", which is a Model Context Protocol (MCP) server designed to help Terraform developers by providing comprehensive access to Terraform provider source code, schema information, and Azure API documentation.
 
 ## Overview
