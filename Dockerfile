@@ -36,10 +36,10 @@ WORKDIR /home/appuser
 RUN chown appuser /home/appuser && chmod 755 /home/appuser
 
 # Copy the binary from builder stage
-COPY --chown=root:root --from=builder /src/terraform-mcp-eva .
+COPY --chown=root:root --from=builder /src/terraform-mcp-eva /usr/local/bin/terraform-mcp-eva
 
 # Set permissions for the binary
-RUN chmod 755 terraform-mcp-eva
+RUN chmod 755 /usr/local/bin/terraform-mcp-eva
 
 # Switch to non-root user
 USER appuser
@@ -50,4 +50,4 @@ ENV TRANSPORT_HOST=127.0.0.1
 ENV TRANSPORT_PORT=8080
 
 # Set the entrypoint
-ENTRYPOINT ["./terraform-mcp-eva"]
+ENTRYPOINT ["terraform-mcp-eva"]
