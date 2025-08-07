@@ -231,6 +231,42 @@ func RegisterMcpServer(s *mcp.Server) {
 		Description: "[You should use this tool before you try resolveProviderDocID]Query fine grained Terraform resource schema by `category`, `name` and optional `path`. The returned value is a json string representing the resource schema, including attribute descriptions, which can be used in Terraform provider schema. If you're querying schema information about specified attribute or nested block schema of a resource from supported provider, this tool should have higher priority. Only support `azurerm`, `azuread`, `aws`, `awscc`, `google` providers now.",
 		Name:        "query_terraform_fine_grained_document",
 	}, tool.QueryFineGrainedSchema)
+
+	mcp.AddTool(s, &mcp.Tool{
+		Annotations: &mcp.ToolAnnotations{
+			DestructiveHint: p(false),
+			IdempotentHint:  false,
+			OpenWorldHint:   p(false),
+			ReadOnlyHint:    true,
+		},
+		InputSchema: &jsonschema.Schema{
+			Type: "object",
+			Properties: map[string]*jsonschema.Schema{
+				"category": {
+					Type:        "string",
+					Description: "Category type for TFLint configuration. Supported values: 'reusable' (default), 'example'. Determines which predefined configuration to use.",
+				},
+				"target_directory": {
+					Type:        "string",
+					Description: "Target directory to scan. If not specified, current working directory will be used. Can be absolute or relative path.",
+				},
+				"custom_config_file": {
+					Type:        "string",
+					Description: "Path to custom TFLint configuration file. If specified, this will be used instead of the category-based configuration.",
+				},
+				"ignored_rule_ids": {
+					Type: "array",
+					Items: &jsonschema.Schema{
+						Type: "string",
+					},
+					Description: "List of TFLint rule IDs to ignore during scanning. These rules will be disabled in the configuration.",
+				},
+			},
+		},
+		Description: "Execute TFLint scanning on Terraform code with configurable parameters. This tool allows AI agents to perform static analysis of Terraform code using TFLint. It supports different configuration categories ('reusable' for production modules, 'example' for example code), custom configuration files, and selective rule ignoring. Returns detailed scan results including issues found, their severity levels, and scan summary statistics. Use this tool when you need to: 1) Validate Terraform code quality and best practices, 2) Identify potential issues in Terraform configurations, 3) Perform automated code review of Terraform modules, 4) Check compliance with Terraform coding standards.",
+		Name:        "tflint_scan",
+	}, tool.TFLintScan)
+
 	prompt.AddSolveAvmIssuePrompt(s)
 }
 

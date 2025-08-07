@@ -43,7 +43,31 @@ Add this configuration to your VS Code MCP settings(make sure that you have perm
 
 ## Available Tools
 
-### 🔍 Golang Source Code Analysis
+### � Code Quality & Linting
+
+#### `tflint_scan`
+**Parameters** (all optional):
+- `category`: Category type for TFLint configuration - "reusable" (default) or "example"
+- `target_directory`: Target directory to scan (defaults to current working directory)
+- `custom_config_file`: Path to custom TFLint configuration file
+- `ignored_rule_ids`: Array of TFLint rule IDs to ignore during scanning
+
+**Description**: Execute TFLint scanning on Terraform code with configurable parameters. This tool performs static analysis of Terraform code using TFLint with predefined configurations for different code types.
+
+**Returns**: Detailed scan results including:
+- List of issues found with severity levels (error, warning, info)
+- File locations and line numbers for each issue
+- Scan summary statistics
+- Raw TFLint output for debugging
+
+**Use Cases**:
+- Validate Terraform code quality and best practices
+- Identify potential issues in Terraform configurations
+- Perform automated code review of Terraform modules
+- Check compliance with Terraform coding standards
+- Integrate with CI/CD pipelines for quality gates
+
+### �🔍 Golang Source Code Analysis
 
 #### `golang_source_code_server_get_supported_golang_namespaces`
 **Parameters**: None  
