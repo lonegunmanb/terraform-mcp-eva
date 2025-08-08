@@ -49,12 +49,13 @@ Add this configuration to your VS Code MCP settings(make sure that you have perm
 
 #### `tflint_scan`
 **Parameters** (all optional):
-- `category`: Category type for TFLint configuration - "reusable" (default) or "example"
-- `target_directory`: Target directory to scan (defaults to current working directory)
+- `category`: Category type for predefined AVM TFLint configuration - "reusable" (default) or "example". Mutually exclusive with `remote_config_url`
+- `remote_config_url`: Optional remote TFLint configuration URL (go-getter syntax). Mutually exclusive with `category`. Must point to a single file
+- `target_directory`: **IMPORTANT: Set to '.' for a scan on current workspace!** Target directory to scan. Only specify this parameter in rare cases when you need to scan a different directory than the current working directory. When left empty/unset, uses current working directory automatically
 - `custom_config_file`: Path to custom TFLint configuration file
 - `ignored_rule_ids`: Array of TFLint rule IDs to ignore during scanning
 
-**Description**: Execute TFLint scanning on Terraform code with configurable parameters. This tool performs static analysis of Terraform code using TFLint with predefined configurations for different code types.
+**Description**: Execute TFLint scanning on Terraform code with configurable parameters. This tool performs static analysis of Terraform code using TFLint with predefined AVM (Azure Verified Modules) configurations or remote configurations for different code types. **Note: In most cases, simply call this tool without specifying `target_directory` - it will automatically scan the current working directory.**
 
 **Returns**: Detailed scan results including:
 - List of issues found with severity levels (error, warning, info)

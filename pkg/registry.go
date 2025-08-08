@@ -252,7 +252,7 @@ func RegisterMcpServer(s *mcp.Server) {
 				},
 				"target_directory": {
 					Type:        "string",
-					Description: "Target directory to scan. If not specified, current working directory will be used. Can be absolute or relative path. In common cases, just set to empty string to use current directory.",
+					Description: "IMPORTANT: Set to '.' for a scan on current workspace! Target directory to scan. Only specify this parameter in rare cases when you need to scan a different directory than the current working directory. In most cases you're running this tool in a container, so you must use a path that can be accessed from the container. When left empty/unset, uses current working directory automatically. Can be absolute or relative path.",
 				},
 				"custom_config_file": {
 					Type:        "string",
