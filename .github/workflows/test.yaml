@@ -25,6 +25,8 @@ jobs:
           go-version-file: 'go.mod'
 
       - name: Download dependencies and run tests
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           go mod download
           go test github.com/lonegunmanb/terraform-mcp-eva/...
