@@ -103,7 +103,7 @@ func TestSetupConfigWithMemoryFs(t *testing.T) {
 			}
 			defer func() { downloadConfigContent = originalDownload }()
 
-			config, cleanup, err := setupConfig(tt.category, tt.customConfig)
+			config, cleanup, err := setupConfig(tt.category)
 
 			if tt.wantErr {
 				assert.Error(t, err)
@@ -116,7 +116,6 @@ func TestSetupConfigWithMemoryFs(t *testing.T) {
 			// Verify config structure
 			assert.NotEmpty(t, config.TempDir)
 			assert.NotEmpty(t, config.ConfigPath)
-			assert.NotEmpty(t, config.BaseURL)
 
 			// Verify config file exists
 			_, err = fs.Stat(config.ConfigPath)

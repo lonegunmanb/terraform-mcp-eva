@@ -2,10 +2,11 @@ package tflint
 
 // ScanParam represents the input parameters for TFLint scanning
 type ScanParam struct {
-	Category     string   `json:"category,omitempty" jsonschema:"enum=reusable,example;description=Type of Terraform code to scan: 'reusable' for reusable modules, 'example' for example code. Defaults to 'reusable'"`
-	TargetPath   string   `json:"target_path,omitempty" jsonschema:"description=Path to the directory containing Terraform code to scan. Defaults to current directory"`
-	ConfigFile   string   `json:"config_file,omitempty" jsonschema:"description=Optional path to custom TFLint configuration file"`
-	IgnoredRules []string `json:"ignored_rules,omitempty" jsonschema:"description=Optional list of TFLint rule IDs to ignore during scanning"`
+	Category        string   `json:"category,omitempty" jsonschema:"enum=reusable,example;description=Type of Terraform code to scan: 'reusable' for reusable modules, 'example' for example code. Defaults to 'reusable'"`
+	RemoteConfigUrl string   `json:"remote_config_url,omitempty" jsonschema:"description=Optional remote TFLint configuration URL (HTTP(S) or git go-getter syntax) mutually exclusive with 'category'; must point to a single file"`
+	TargetPath      string   `json:"target_path,omitempty" jsonschema:"description=Path to the directory containing Terraform code to scan. Defaults to current directory"`
+	ConfigFile      string   `json:"config_file,omitempty" jsonschema:"description=Optional path to custom TFLint configuration file"`
+	IgnoredRules    []string `json:"ignored_rules,omitempty" jsonschema:"description=Optional list of TFLint rule IDs to ignore during scanning"`
 }
 
 // ScanResult represents the result of a TFLint scan
@@ -51,5 +52,4 @@ type ScanSummary struct {
 type ConfigData struct {
 	TempDir    string `json:"temp_dir"`
 	ConfigPath string `json:"config_path"`
-	BaseURL    string `json:"base_url"`
 }

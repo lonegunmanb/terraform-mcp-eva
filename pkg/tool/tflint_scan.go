@@ -10,8 +10,9 @@ import (
 )
 
 type TFLintScanParam struct {
-	Category         string   `json:"category,omitempty" jsonschema:"Category type for TFLint configuration. Supported values: 'reusable' (default), 'example'. Determines which predefined configuration to use."`
-	TargetDirectory  string   `json:"target_directory,omitempty" jsonschema:"Target directory to scan. If not specified, current working directory will be used. Can be absolute or relative path."`
+	Category         string   `json:"category,omitempty" jsonschema:"Category type for predefined AVM TFLint configuration. Supported values: 'reusable' (default) or 'example'. Mutually exclusive with 'remote_config_url' (cannot set both). Ignored if remote_config_url is provided. If neither is set, defaults to 'reusable'."`
+	RemoteConfigUrl  string   `json:"remote_config_url,omitempty" jsonschema:"Optional remote TFLint configuration URL (go-getter syntax, e.g. git::https://...//path/to/file.tflint.hcl?ref=tag). Mutually exclusive with 'category'. Must point to a single file which will be fetched as remote.tflint.hcl. If neither category nor remote_config_url set, default category 'reusable' applies."`
+	TargetDirectory  string   `json:"target_directory,omitempty" jsonschema:"Target directory to scan. If not specified, current working directory will be used. Can be absolute or relative path. In common cases, just set to empty string to use current directory."`
 	CustomConfigFile string   `json:"custom_config_file,omitempty" jsonschema:"Path to custom TFLint configuration file. If specified, this will be used instead of the category-based configuration."`
 	IgnoredRuleIDs   []string `json:"ignored_rule_ids,omitempty" jsonschema:"List of TFLint rule IDs to ignore during scanning. These rules will be disabled in the configuration."`
 }
@@ -19,10 +20,11 @@ type TFLintScanParam struct {
 func TFLintScan(_ context.Context, _ *mcp.ServerSession, params *mcp.CallToolParamsFor[TFLintScanParam]) (*mcp.CallToolResultFor[any], error) {
 	// Convert the MCP parameters to TFLint scan parameters
 	scanParams := tflint.ScanParam{
-		Category:     params.Arguments.Category,
-		TargetPath:   params.Arguments.TargetDirectory,
-		ConfigFile:   params.Arguments.CustomConfigFile,
-		IgnoredRules: params.Arguments.IgnoredRuleIDs,
+		Category:        params.Arguments.Category,
+		RemoteConfigUrl: params.Arguments.RemoteConfigUrl,
+		TargetPath:      params.Arguments.TargetDirectory,
+		ConfigFile:      params.Arguments.CustomConfigFile,
+		IgnoredRules:    params.Arguments.IgnoredRuleIDs,
 	}
 
 	// Execute the TFLint scan

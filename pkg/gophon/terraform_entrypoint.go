@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"strings"
 )
 
@@ -35,7 +36,19 @@ var NotFoundError = errors.New("source code not found (404)")
 
 // readURLContent reads content from a URL and returns it as []byte
 func readURLContent(url string) ([]byte, error) {
-	resp, err := http.Get(url)
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request for URL %s: %w", url, err)
+	}
+
+	// Add GitHub token as Bearer authorization header if environment variable is set
+	if token := os.Getenv("GITHUB_TOKEN"); token != "" {
+		req.Header.Set("Authorization", "Bearer "+token)
+	}
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch URL %s: %w", url, err)
 	}

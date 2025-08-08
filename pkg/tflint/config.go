@@ -2,32 +2,34 @@ package tflint
 
 import (
 	"fmt"
-	"io"
-	"net/http"
 	"path/filepath"
+	"strings"
 
-	hclmerge "github.com/lonegunmanb/hclmerge/pkg"
 	"github.com/spf13/afero"
 )
 
 // Global filesystem interface for testing
 var fs = afero.NewOsFs()
 
-// Global HTTP download function for testing
+// downloadConfigContent now uses go-getter for all remote config downloads
 var downloadConfigContent = func(url string) (string, error) {
-	resp, err := http.Get(url)
+	// Create temporary directory for download
+	tempDir, err := afero.TempDir(fs, "", "tflint-download-*")
 	if err != nil {
+		return "", fmt.Errorf("failed to create temp directory: %w", err)
+	}
+	defer fs.RemoveAll(tempDir)
+
+	// Use go-getter to download the file directly (timeout handled in getter)
+	configFile := filepath.Join(tempDir, "config.hcl")
+	if err := remoteConfigGetter.Get(configFile, url); err != nil {
 		return "", fmt.Errorf("failed to download config from %s: %w", url, err)
 	}
-	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("failed to download config from %s: status %d", url, resp.StatusCode)
-	}
-
-	content, err := io.ReadAll(resp.Body)
+	// Read the downloaded file
+	content, err := afero.ReadFile(fs, configFile)
 	if err != nil {
-		return "", fmt.Errorf("failed to read config content: %w", err)
+		return "", fmt.Errorf("failed to read downloaded config: %w", err)
 	}
 
 	return string(content), nil
@@ -48,7 +50,7 @@ var setupTempConfigDir = func() (string, func(), error) {
 }
 
 // setupConfig sets up the complete TFLint configuration
-func setupConfig(category, customConfigFile string) (*ConfigData, func(), error) {
+func setupConfig(category string) (*ConfigData, func(), error) {
 	// Create temporary directory
 	tempDir, tempCleanup, err := setupTempConfigDir()
 	if err != nil {
@@ -71,24 +73,46 @@ func setupConfig(category, customConfigFile string) (*ConfigData, func(), error)
 	if err != nil {
 		return nil, tempCleanup, fmt.Errorf("failed to write base config file: %w", err)
 	}
-	finalConfigPath := baseConfigPath
+	return createConfigData(tempDir, baseConfigPath, configURL), tempCleanup, nil
+}
 
-	// If custom config file is provided, merge it with the base config
-	if customConfigFile != "" {
-		// Merge custom config with base config using hclmerge.MergeFile
-		mergedConfigPath := filepath.Join(tempDir, "final.tflint.hcl")
-		err = hclmerge.MergeFile(baseConfigPath, customConfigFile, mergedConfigPath)
-		if err != nil {
-			return nil, tempCleanup, fmt.Errorf("failed to merge custom config with base config: %w", err)
+// setupRemoteConfig sets up configuration when a remote_config_url is provided.
+// Downloads the remote config file directly to the temp directory as remote.tflint.hcl.
+func setupRemoteConfig(remoteURL string) (*ConfigData, func(), error) {
+	// Create temporary directory first
+	tempDir, tempCleanup, err := setupTempConfigDir()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	// Preliminary git root heuristic: if git:: and no .git// treat as root (must specify file path)
+	if strings.HasPrefix(remoteURL, "git::") {
+		core := remoteURL
+		if i := strings.Index(core, "?"); i >= 0 {
+			core = core[:i]
 		}
-		finalConfigPath = mergedConfigPath
+		if !strings.Contains(core, ".git//") {
+			return nil, tempCleanup, fmt.Errorf("remote_config_url must point to a single file (git repository root detected): %s", remoteURL)
+		}
 	}
 
-	config := &ConfigData{
+	// Remote getter downloads directly to specified file path (timeout handled in getter)
+	baseConfigPath := filepath.Join(tempDir, "remote.tflint.hcl")
+	if err := remoteConfigGetter.Get(baseConfigPath, remoteURL); err != nil {
+		return nil, tempCleanup, fmt.Errorf("failed to fetch remote config: %w", err)
+	}
+
+	// File is now at the expected location
+	return createConfigData(tempDir, baseConfigPath, remoteURL), tempCleanup, nil
+}
+
+// mergeOptionalCustomConfig merges customConfigFile into baseConfigPath if provided, returning final path.
+// mergeOptionalCustomConfig removed after simplification: custom config merging no longer supported.
+
+// createConfigData centralizes creation of ConfigData to avoid duplication
+func createConfigData(tempDir, configPath, baseURL string) *ConfigData {
+	return &ConfigData{
 		TempDir:    tempDir,
-		ConfigPath: finalConfigPath,
-		BaseURL:    configURL,
+		ConfigPath: configPath,
 	}
-
-	return config, tempCleanup, nil
 }

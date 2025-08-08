@@ -4,9 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
+
 	"github.com/lonegunmanb/terraform-mcp-eva/pkg/azapi"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
-	"strings"
 )
 
 type AzAPIVersionQueryParam struct {

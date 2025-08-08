@@ -1,5 +1,163 @@
 # TFLint MCP Tool Development Action Plan
 
+> NOTE (Enhancement In Progress): A new feature "RemoteConfigUrl" for the `tflint_scan` tool is being planned (see next section). The original completed plan is retained below for historical context.
+
+---
+
+## Enhancement: Support Custom Remote TFLint Configuration via `RemoteConfigUrl`
+
+### Current Progress Snapshot (Aug 2025 - Updated After GetFile Implementation)
+Status legend: ✅ done | 🔄 in-progress | ⏭ not started
+
+| Item | Status | Notes |
+|------|--------|-------|
+| Param `RemoteConfigUrl` added to `ScanParam` | ✅ | Field + jsonschema tag present |
+| Mutual exclusivity validation (category vs remote) | ✅ | Error returned early in `Scan` |
+| Temp dir scaffolding | ✅ | `setupRemoteConfig` implemented |
+| Remote getter abstraction | ✅ | `remote_getter.go` with real go-getter GetFile impl |
+| Single file enforcement | ✅ | Switched to direct `GetFile` -> always `remote.tflint.hcl` |
+| Directory/root repo error | ✅ | Git root heuristic maintained (root w/out .git//path rejected) |
+| Timeout env var parsing | ✅ | Fallback 60s; test covers invalid -> fallback |
+| Scheme whitelist | ❌ (removed) | Allow whatever go-getter supports |
+| Unsupported scheme test | ❌ (removed) | Behavior delegated to go-getter |
+| Git root heuristic (.git//) | ✅ | Still enforced |
+| Custom config merge (remote) | ❌ (dropped) | Scope reduced: remote merging removed per refactor |
+| Custom config merge (category) | ❌ (dropped) | `setupConfig` no longer merges custom config |
+| Tests: directory error | ✅ | Updated expectation (root heuristic message) |
+| Tests: git subfolder (no .hcl) | ✅ | Zero file case handled before switch; now always single file path -> heuristic still tested |
+| Tests: happy path single file | ✅ | Uses mock getter writing remote.tflint.hcl |
+| Tests: timeout (env invalid fallback) | ✅ | Covered (no enforced timeout scenario yet) |
+| Tests: multiple .hcl files error | ✅ (legacy scenario) | Multi file test now simulates dual write pre-discovery; with GetFile path always single, test ensures earlier logic still guards multi writes |
+| Tests: network / fetch failure propagation | ✅ | Mock returns error -> wrapped message asserted |
+| Tests: ignored rules precedence | ✅ | Ignored rules applied via CLI flags test passes |
+| README & tool schema update | ⏭ | Pending exposure of `remote_config_url` param |
+| Invalid HCL sanitization | N/A (merge removed) | Sanitization helper remains but unused currently |
+| Error message content privacy | ✅ (current scope) | No raw content surfaced without merge parsing |
+
+### Adjusted Decisions
+* Removed prior requirement to restrict schemes; we now defer to go-getter's supported protocols (git::, http(s), s3, gcs, etc.). Responsibility shifts to callers to use safe sources.
+* Unsupported scheme test removed accordingly.
+* Timeout env var implemented earlier than original step ordering.
+* Custom config merge now handled fully inside setup functions; duplicate merge in `Scan` removed.
+
+### Goal
+Add an optional `RemoteConfigUrl` parameter to `TFLintScanParam` allowing callers to specify an arbitrary remote TFLint configuration fetched using [go-getter](https://github.com/hashicorp/go-getter/tree/v2.2.3). This must be **mutually exclusive** with the existing `Category` parameter. If `RemoteConfigUrl` is set, we skip category-based resolution and download the configuration via go-getter into the temp config directory before proceeding with rule ignoring / merging logic.
+
+### Motivation
+- Provide greater flexibility beyond the two predefined category configs.
+- Enable experimentation with organization-specific or branch-specific configs.
+- Reuse complex shared configs stored in Git, HTTP, S3, or other go-getter supported sources.
+
+### Functional Requirements (Revised)
+1. (✅) New optional field: `RemoteConfigUrl string` (JSON name: `remote_config_url`).
+2. (✅) Mutual exclusivity validation: error if BOTH `Category` and `RemoteConfigUrl` are set. If both empty, default category = `reusable`.
+3. (✅) When `RemoteConfigUrl` provided, skip category resolution.
+4. (🔄) Support all go-getter supported schemes transparently (no internal whitelist). Real fetch pending.
+5. (✅ initial / 🔄 final) Result MUST yield exactly one `.hcl` file. Current implementation enforces post-download discovery; real getter integration pending.
+6. (✅) Preserve category behavior when `remote_config_url` absent.
+7. (🔄) Clear error messages for: unreachable URL (after real getter), directory (done), multi / zero `.hcl` (done for zero; pending multi test), invalid HCL (pending sanitization), timeout (baseline implemented, need explicit timeout test).
+8. (⏭) Update README & tool schema docs: describe single-file requirement, timeout env var, precedence of custom config & ignored rules.
+9. (🔄) Ensure error sanitization: invalid HCL should not echo file contents (only URL context).
+10. (⏭) Precedence tests: remote base < custom config override < ignored rules (ignored rules final).
+
+### Non-Functional Requirements
+- Maintain test coverage & follow TDD.
+- Minimal disruption to existing public API (additive only).
+- Add dependency: `github.com/hashicorp/go-getter/v2` with version pin in `go.mod`.
+- Ensure deterministic temp paths & cleanup unaffected.
+
+### Security / Safety Considerations
+* Timeout enforced (default 60s) with env override `TFLINT_REMOTE_CONFIG_TIMEOUT_SECONDS` (>0). Invalid / zero / negative => fallback. Need test for successful override & for timeout triggering cancellation.
+* Relying on go-getter introduces broader protocol surface (git, s3, gcs, etc.); caller responsibility to vet sources. No internal allowlist.
+* Planned: sanitize invalid HCL parse errors to avoid leaking remote file content.
+
+### Edge Cases
+- Both `Category` and `RemoteConfigUrl` set -> validation error.
+- Only `RemoteConfigUrl` set -> use it.
+- Empty `RemoteConfigUrl` & empty `Category` -> default Category = `reusable`.
+- Remote resolves to a directory (e.g., repo root) -> error (must specify path to a single file).
+- Remote HCL invalid -> error reports remote URL only (no file content echoed).
+- Network failure / 404 -> error with original URL and wrapped cause.
+- Git repo with subdir file: Support syntax `git::https://...//path/to/config.tflint.hcl?ref=tag`.
+
+### High-Level Design Changes (Status Update)
+Modules impacted & implementation status:
+- ✅ `pkg/tflint/types.go`: `RemoteConfigUrl` field added to `ScanParam` with jsonschema tag.
+- ✅ `pkg/tflint/scanner.go`: Mutual exclusivity validation implemented; branches to `setupRemoteConfig` vs `setupConfig`.
+- ✅ `pkg/tflint/config.go`: `setupRemoteConfig` function implemented with timeout, discovery, merge logic.
+- ✅ `pkg/tflint/remote_getter.go`: `RemoteGetter` interface + noop default implementation.
+- ❌ `pkg/tflint/utils.go`: Scheme validation removed (deferred to go-getter).
+- 🔄 Real go-getter implementation: Interface ready, concrete implementation pending.
+- ⏭ `pkg/tool/tflint_scan.go`: Tool schema update pending (add remote_config_url param).
+
+### Updated Forward Plan (Post-Refactor)
+1. Expose `remote_config_url` in MCP tool param & registry schema (mutual exclusivity note with `category`).
+2. Update README: document remote mode, single-file constraint (always saved as `remote.tflint.hcl`), timeout env var, ignored rules via CLI flags.
+3. Decide whether to re-introduce custom config merging (currently removed) or formally drop from spec; if keeping removed, clean old references and adjust public docs.
+4. (Optional) Add explicit timeout trigger test (mock sleeps > configured small timeout) to assert cancellation path.
+5. (Optional) Remove unused sanitization helper or wire it where future parsing/validation might occur.
+6. (Stretch) Logging & potential caching of remote file (URL+ref).
+
+Testing Principle: Focus tests on observable behavior and externally visible outcomes, not on trivial data assignments or mere struct field presence (the compiler already guarantees field existence).
+
+Assertion Guideline: Prefer github.com/stretchr/testify/assert or require for all test validations (choose require for fatal conditions, assert for non-fatal) instead of manual if err != nil / t.Fatalf patterns.
+
+#### Original Step Breakdown (with current status):
+1. ✅ Test Scaffold – Param Validation: Added `TestScanParamCategoryAndRemoteConfigUrlMutualExclusion`.
+2. ✅ Implement Param Struct Update & validation logic: Field in `types.go`, validation in `scanner.go`.
+3. ✅ Tests: Default Behavior Unchanged: Existing category tests remain green.
+4. ✅ Tests: Remote URL Happy Path: `TestScanRemoteConfigSingleFileSuccess` with mock getter.
+5. 🔄 Implement go-getter integration: Interface ready, real implementation pending.
+6. ✅ Tests: Remote URL Directory Result: `TestScanRemoteConfigDirectoryError` (git root heuristic).
+7. ✅ Implement directory detection & error: Git root heuristic + single `.hcl` discovery.
+8. ❌ Tests: Unsupported Scheme: Removed (all go-getter schemes now allowed).
+9. ❌ Implement scheme validation: Removed to defer to go-getter capabilities.
+10. ⏭ Tests: Custom Config Merge Still Applies: Pending (merge logic implemented but not specifically tested for remote path).
+11. ✅ Implement merge ordering: `mergeOptionalCustomConfig` used in both category & remote paths.
+12. ⏭ Tests: Ignored Rules Override Merged Config: Pending precedence test.
+13. ✅ Implement ignored-rules-last logic: Already in place via existing ignored rules parameter handling.
+14. ⏭ Tests: Invalid HCL error sanitization: Pending.
+15. ⏭ Implement error wrapping ensuring content not included: Pending.
+16. ⏭ Tests: Network Failure: Pending (after real getter).
+17. ✅ Implement context timeout & error propagation: Done with env var override.
+18. ✅ Refactor: Extract download logic: `setupRemoteConfig`, `discoverSingleHCLFile`, helpers extracted.
+19. ⏭ Tests: Timeout Env Var Override: Basic env parsing tested; need explicit timeout trigger test.
+20. ⏭ Documentation Update Tests: Optional.
+21. ⏭ Update README & tool descriptions: Pending.
+22. ⏭ Final Lint / Vet / Race checks: Pending.
+
+### Test Utilities / Mocks (Status Update)
+- ✅ Interface wrapper over go-getter: `RemoteGetter` interface in `remote_getter.go`.
+- ✅ Provide default production implementation: `noopGetter` as placeholder; real implementation pending.
+- ✅ Global variable override capability: `remoteConfigGetter` variable allows test stubbing via gostub.
+- ✅ Mock implementation created: `mockRemoteGetter` in tests with configurable file creation behavior.
+
+### Revised Acceptance Criteria
+- [ ] Tool layer exposes `remote_config_url` & docs updated.
+- [x] Mutual exclusivity enforced.
+- [x] Category default behavior intact when remote absent.
+- [x] Real go-getter `GetFile` implemented.
+- [x] Single file always produced (`remote.tflint.hcl`).
+- [x] Git root heuristic error for repo root without file path.
+- [ ] Timeout cancellation test (explicit) (optional).
+- [x] Ignored rules applied via CLI flags.
+- [x] Network failure surfaced with wrapped error.
+- [ ] README updated (remote usage, timeout env var, removed custom merge note).
+- [ ] Sanitization helper decision (remove or document N/A).
+
+### Open Questions / Decisions (Revised)
+- Retain removal of custom config merging or reintroduce? (Currently removed — update README accordingly.)
+- Add explicit timeout failure test? (Not critical but increases confidence.)
+- Keep sanitization helper or prune?
+
+### Next Steps (Immediate Priority)
+1. **Add go-getter dependency**: `go get github.com/hashicorp/go-getter/v2` and implement real `RemoteGetter`.
+2. **Missing tests**: Multiple `.hcl` files error, invalid HCL sanitization, explicit timeout trigger, precedence validation.
+3. **Tool schema update**: Add `remote_config_url` parameter to `pkg/tool/tflint_scan.go`.
+4. **Documentation**: Update README with new parameter, constraints, and examples.
+
+---
+
 ## Project Overview
 ✅ **COMPLETED** - Develop a new MCP tool that enables AI agents to execute TFLint scanning on Terraform code in specified directories. The tool simulates the behavior of the AVM script `run-tflint.sh` with a simplified parameter structure.
 
@@ -15,25 +173,31 @@
 
 ### Technical Implementation Details
 
-#### Package Structure
+#### Package Structure (Enhanced)
 ```
 pkg/tflint/
 ├── config.go              # ✅ TFLint configuration management with HCL support
 ├── config_test.go          # ✅ Configuration tests with afero filesystem abstraction
 ├── scanner.go              # ✅ Core scanning logic and command execution
 ├── scanner_test.go         # ✅ Scanner tests with comprehensive mocking
-├── types.go                # ✅ Data structure definitions with JSON schema
+├── types.go                # ✅ Data structure definitions with JSON schema + RemoteConfigUrl
+├── types_remote_config_test.go # ✅ Remote config specific tests (mutual exclusivity, directory error, happy path)
+├── remote_getter.go        # ✅ RemoteGetter interface and noop implementation
 ├── utils.go                # ✅ Utility functions for defaults and validation
 └── utils_test.go           # ✅ Utility function tests
 
 pkg/tool/
-├── tflint_scan.go          # ✅ MCP tool wrapper and integration
+├── tflint_scan.go          # 🔄 MCP tool wrapper and integration (needs remote_config_url param)
 └── tflint_scan_test.go     # ✅ MCP tool tests with mocking
 ```
 
 #### Core Features Implemented
 1. **Category-Based Configuration** - Maps "reusable" and "example" to appropriate TFLint configs
 2. **Dynamic Configuration Download** - Downloads configs from Azure/tfmod-scaffold repository
+3. ✅ **Remote Configuration Support** - Added `RemoteConfigUrl` parameter with mutual exclusivity validation
+4. ✅ **Remote Getter Abstraction** - Interface-based design allowing real go-getter integration and test mocking
+5. ✅ **Single File Enforcement** - Validates remote downloads result in exactly one `.hcl` file
+6. ✅ **Timeout Management** - Configurable via `TFLINT_REMOTE_CONFIG_TIMEOUT_SECONDS` environment variable
 3. **HCL Configuration Manipulation** - Uses hclwrite and hclmerge for rule modifications
 4. **Command Execution Abstraction** - Mockable command execution for testing
 5. **Comprehensive Error Handling** - Detailed error reporting and recovery
@@ -45,6 +209,7 @@ pkg/tool/
 - **target_directory**: Directory to scan (defaults to current directory)  
 - **custom_config_file**: Path to custom TFLint configuration file
 - **ignored_rule_ids**: Array of rule IDs to disable during scanning
+- ✅ **remote_config_url**: URL to remote TFLint configuration (mutually exclusive with category; supports all go-getter schemes)
 
 #### Output Structure
 ```json
