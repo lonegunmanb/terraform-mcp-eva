@@ -244,11 +244,15 @@ func RegisterMcpServer(s *mcp.Server) {
 			Properties: map[string]*jsonschema.Schema{
 				"category": {
 					Type:        "string",
-					Description: "Category type for TFLint configuration. Supported values: 'reusable' (default), 'example'. Determines which predefined configuration to use.",
+					Description: "Predefined AVM TFLint configuration category. Supported: 'reusable' (default) or 'example'. Mutually exclusive with 'remote_config_url' (cannot set both). If neither category nor remote_config_url provided, defaults to 'reusable'. Ignored when remote_config_url is set.",
+				},
+				"remote_config_url": {
+					Type:        "string",
+					Description: "Optional remote TFLint configuration URL (go-getter syntax, e.g. git::https://...//path/to/file.tflint.hcl?ref=tag). Mutually exclusive with 'category'. Must point to a single file; fetched as remote.tflint.hcl. If neither is provided, defaults to category 'reusable'.",
 				},
 				"target_directory": {
 					Type:        "string",
-					Description: "Target directory to scan. If not specified, current working directory will be used. Can be absolute or relative path.",
+					Description: "Target directory to scan. If not specified, current working directory will be used. Can be absolute or relative path. In common cases, just set to empty string to use current directory.",
 				},
 				"custom_config_file": {
 					Type:        "string",

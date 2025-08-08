@@ -230,6 +230,10 @@ func parseScanOutput(jsonOutput string, category string, targetPath string, init
 
 // Scan executes a complete TFLint scan
 func Scan(param ScanParam) (*ScanResult, error) {
+	// Validate mutual exclusivity between Category and RemoteConfigUrl
+	if param.Category != "" && param.RemoteConfigUrl != "" {
+		return nil, fmt.Errorf("category and remote_config_url are mutually exclusive; set only one")
+	}
 	// Apply defaults
 	category := getDefaultCategory(param.Category)
 	targetPath, err := getDefaultTargetPath(param.TargetPath)
@@ -243,14 +247,21 @@ func Scan(param ScanParam) (*ScanResult, error) {
 		return nil, err
 	}
 
-	// Setup configuration
-	config, cleanup, err := setupConfig(category, param.ConfigFile)
+	var config *ConfigData
+	var cleanup func()
+	if param.RemoteConfigUrl != "" {
+		config, cleanup, err = setupRemoteConfig(param.RemoteConfigUrl)
+	} else {
+		config, cleanup, err = setupConfig(category)
+	}
 	if cleanup != nil {
 		defer cleanup()
 	}
 	if err != nil {
 		return nil, fmt.Errorf("failed to setup config: %w", err)
 	}
+
+	// (custom config already merged in setup functions)
 
 	// Initialize TFLint
 	initOutput, err := executeTFLintInit(targetPath, config.ConfigPath)
