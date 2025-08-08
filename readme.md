@@ -31,6 +31,8 @@ Add this configuration to your VS Code MCP settings(make sure that you have perm
                 "--rm",
                 "-v",
                 "${workspaceFolder}:/workspace",
+                "-w",
+                "/workspace",
                 "-e",
                 "TRANSPORT_MODE=stdio",
                 "-e",
