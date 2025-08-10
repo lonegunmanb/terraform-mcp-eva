@@ -3,17 +3,18 @@ package gophon
 type RemoteIndex struct {
 	GitHubOwner string
 	GitHubRepo  string
-	BaseUrl     string
 	PackagePath string
 }
 
 var ProviderIndexMap = map[string]string{
 	"azurerm": AzureRMInternal,
+	"azuread": AzureADInternal,
 	"aws":     AWSInternal,
 }
 
 const (
 	AzureRMInternal = "github.com/hashicorp/terraform-provider-azurerm/internal"
+	AzureADInternal = "github.com/hashicorp/terraform-provider-azuread/internal"
 	AWSInternal     = "github.com/hashicorp/terraform-provider-aws/internal"
 )
 
@@ -29,13 +30,16 @@ var RemoteIndexMap = map[string]RemoteIndex{
 	AzureRMInternal: {
 		GitHubOwner: "lonegunmanb",
 		GitHubRepo:  "terraform-provider-azurerm-index",
-		BaseUrl:     "https://raw.githubusercontent.com/lonegunmanb/terraform-provider-azurerm-index/refs/{version}/index",
 		PackagePath: "github.com/hashicorp/terraform-provider-azurerm",
+	},
+	AzureADInternal: {
+		GitHubOwner: "lonegunmanb",
+		GitHubRepo:  "terraform-provider-azuread-index",
+		PackagePath: "github.com/hashicorp/terraform-provider-azuread",
 	},
 	AWSInternal: {
 		GitHubOwner: "lonegunmanb",
 		GitHubRepo:  "terraform-provider-aws-index",
-		BaseUrl:     "https://raw.githubusercontent.com/lonegunmanb/terraform-provider-aws-index/refs/{version}/index",
 		PackagePath: "github.com/hashicorp/terraform-provider-aws",
 	},
 }

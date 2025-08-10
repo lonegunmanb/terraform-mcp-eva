@@ -1,13 +1,15 @@
 package gophon
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"os"
 	"strings"
+
+	"github.com/google/go-github/v74/github"
 )
 
 var validEntrypoints = map[string]map[string]struct{}{
@@ -35,22 +37,21 @@ var validEntrypoints = map[string]map[string]struct{}{
 var NotFoundError = errors.New("source code not found (404)")
 
 // readURLContent reads content from a URL and returns it as []byte
-func readURLContent(url string) ([]byte, error) {
-
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create request for URL %s: %w", url, err)
-	}
+func readURLContent(owner string, repo string, path string, tag string) ([]byte, error) {
+	githubClient := github.NewClient(&http.Client{})
 
 	// Add GitHub token as Bearer authorization header if environment variable is set
 	if token := os.Getenv("GITHUB_TOKEN"); token != "" {
-		req.Header.Set("Authorization", "Bearer "+token)
+		githubClient = githubClient.WithAuthToken(token)
 	}
+	option := &github.RepositoryContentGetOptions{}
+	if tag != "" {
+		option.Ref = tag
+	}
+	fileContent, _, resp, err := githubClient.Repositories.GetContents(context.Background(), owner, repo, path, option)
 
-	client := &http.Client{}
-	resp, err := client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch URL %s: %w", url, err)
+		return nil, fmt.Errorf("failed to fetch URL %s: %w", path, err)
 	}
 	defer func() {
 		if closeErr := resp.Body.Close(); closeErr != nil {
@@ -63,19 +64,17 @@ func readURLContent(url string) ([]byte, error) {
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("HTTP request failed with status %d for URL: %s", resp.StatusCode, url)
+		return nil, fmt.Errorf("HTTP request failed with status %d for URL: %s", resp.StatusCode, path)
 	}
-
-	content, err := io.ReadAll(resp.Body)
+	content, err := fileContent.GetContent()
 	if err != nil {
-		return nil, fmt.Errorf("failed to read response body from URL %s: %w", url, err)
+		return nil, fmt.Errorf("failed to read response body from URL %s: %w", path, err)
 	}
 
-	return content, nil
+	return []byte(content), nil
 }
 
 func GetTerraformSourceCode(blockType, terraformType, entrypointName, tag string) (string, error) {
-	tag = formatVersion(tag)
 	entryPoints, ok := validEntrypoints[blockType]
 	if !ok {
 		return "", fmt.Errorf("invalid block type: %s", blockType)
@@ -96,24 +95,23 @@ func GetTerraformSourceCode(blockType, terraformType, entrypointName, tag string
 	if blockType != "ephemeral" {
 		blockType += "s"
 	}
-	baseUrl := strings.ReplaceAll(remoteIndex.BaseUrl, "{version}", tag)
-	url := fmt.Sprintf("%s/%s/%s.json", baseUrl, blockType, terraformType)
+	path := fmt.Sprintf("%s/%s/%s.json", "index", blockType, terraformType)
 
 	// Use the helper function to read content from the URL
-	content, err := readURLContent(url)
+	content, err := readURLContent(remoteIndex.GitHubOwner, remoteIndex.GitHubRepo, path, tag)
 	if err != nil {
 		return "", fmt.Errorf("failed to read content from URL: %w", err)
 	}
 
 	index := make(map[string]string)
 	if err = json.Unmarshal(content, &index); err != nil {
-		return "", fmt.Errorf("failed to unmarshal JSON content from URL %s: %w", url, err)
+		return "", fmt.Errorf("failed to unmarshal JSON content from URL %s: %w", path, err)
 	}
 	entrypointName += "_index"
 	entryPoint := index[entrypointName]
 	namespace := index["namespace"]
 	namespace = strings.TrimPrefix(namespace, remoteIndex.PackagePath)
-	sourceCode, err := readURLContent(baseUrl + namespace + "/" + entryPoint)
+	sourceCode, err := readURLContent(remoteIndex.GitHubOwner, remoteIndex.GitHubRepo, "index"+namespace+"/"+entryPoint, "")
 	if err != nil {
 		return "", err
 	}

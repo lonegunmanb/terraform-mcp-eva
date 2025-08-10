@@ -26,7 +26,6 @@ func GetGolangSourceCode(namespace, symbol, receiver, name, tag string) (string,
 	if _, ok := validSymbols[symbol]; !ok {
 		return "", fmt.Errorf("unsupported symbol: %s", symbol)
 	}
-	version := formatVersion(tag)
 	if name == "" {
 		return "", fmt.Errorf("name cannot be empty")
 	}
@@ -34,13 +33,13 @@ func GetGolangSourceCode(namespace, symbol, receiver, name, tag string) (string,
 		return "", fmt.Errorf("receiver is only valid for methods")
 	}
 	remoteIndex := RemoteIndexMap[remoteKey]
-	baseUrl := strings.ReplaceAll(remoteIndex.BaseUrl, "{version}", version)
+	//baseUrl := strings.ReplaceAll(remoteIndex.BaseUrl, "{version}", version)
 	namespace = strings.TrimPrefix(namespace, remoteIndex.PackagePath)
-	url := fmt.Sprintf("%s%s/%s.%s.%s.goindex", baseUrl, namespace, symbol, receiver, name)
+	path := fmt.Sprintf("%s%s/%s.%s.%s.goindex", "index", namespace, symbol, receiver, name)
 	if receiver == "" {
-		url = fmt.Sprintf("%s%s/%s.%s.goindex", baseUrl, namespace, symbol, name)
+		path = fmt.Sprintf("%s%s/%s.%s.goindex", "index", namespace, symbol, name)
 	}
-	content, err := readURLContent(url)
+	content, err := readURLContent(remoteIndex.GitHubOwner, remoteIndex.GitHubRepo, path, tag)
 	if err != nil {
 		return "", fmt.Errorf("failed to read content from URL: %w", err)
 	}
