@@ -4,6 +4,7 @@
 - ✅ **Phase 1 Complete**: Core types and infrastructure implemented with comprehensive validation
 - ✅ **Phase 2 Complete**: Configuration management (policy URL resolution) following TDD
 - ✅ **Phase 3 Complete**: Scanner logic with full TDD implementation and resource cleanup
+- ✅ **Phase 3.5 Complete**: Default AVM Exceptions support with comprehensive testing
 - 📍 **Next**: Phase 4 - MCP integration and tool registration
 
 ## Overview
@@ -257,8 +258,9 @@ type MockGetter struct {
 1. **Phase 1**: Core infrastructure without breaking existing functionality ✅
 2. **Phase 2**: Configuration management with comprehensive testing ✅  
 3. **Phase 3**: Scanner implementation with mocked dependencies ✅
-4. **Phase 4**: MCP integration and tool registration 🔄
-5. **Phase 5**: Documentation and final testing (Pending)
+4. **Phase 3.5**: Default AVM Exceptions support and enhanced testing ✅
+5. **Phase 4**: MCP integration and tool registration 🔄
+6. **Phase 5**: Documentation and final testing (Pending)
 
 ## Phase 3 Achievements Summary ✅
 
@@ -286,6 +288,40 @@ PASS ok github.com/lonegunmanb/terraform-mcp-eva/pkg/conftest 0.091s
 ```
 
 **Ready for Phase 4: MCP Integration** 🚀
+
+## Phase 3.5 Achievements Summary ✅
+
+### **Default AVM Exceptions Implementation Completed (August 12, 2025)**
+- ✅ **IncludeDefaultAVMExceptions Field**: Added boolean flag to ScanParam with JSON serialization
+- ✅ **downloadDefaultAVMExceptions Function**: Automated download from Azure policy library
+- ✅ **Integration with resolvePolicySources**: Seamless addition to policy resolution workflow
+- ✅ **Comprehensive Testing**: 3 additional test cases covering all scenarios
+- ✅ **Azure tfmod-scaffold Compatibility**: Matches official Azure scaffold behavior
+
+### **Technical Implementation**
+- **URL Source**: `https://raw.githubusercontent.com/Azure/policy-library-avm/refs/heads/main/policy/avmsec/avm_exceptions.rego.bak`
+- **File Structure**: Downloaded to `default_exceptions/avmsec_exceptions.rego`
+- **Policy Integration**: Added as additional PolicySource with count=1
+- **Error Handling**: Comprehensive error reporting for download failures
+- **Test Coverage**: MockPolicyDownloader integration with proper mocking
+
+### **Key Features**
+- **Conditional Download**: Only downloads when `IncludeDefaultAVMExceptions: true`
+- **Proper Cleanup**: Follows existing temporary directory cleanup patterns
+- **Type Safety**: Maintains strong typing with PolicySource struct
+- **Backwards Compatible**: Existing functionality unchanged
+
+### **Test Results**
+```
+=== RUN   TestDownloadDefaultAVMExceptions
+--- PASS: TestDownloadDefaultAVMExceptions (0.00s)
+=== RUN   TestResolvePolicySources_WithDefaultAVMExceptions
+--- PASS: TestResolvePolicySources_WithDefaultAVMExceptions (0.00s)
+=== RUN   TestResolvePolicySources_WithoutDefaultAVMExceptions
+--- PASS: TestResolvePolicySources_WithoutDefaultAVMExceptions (0.00s)
+```
+
+**Fully Ready for Phase 4: MCP Integration** 🚀
 
 ## Notes
 
