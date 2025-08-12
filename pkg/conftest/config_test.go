@@ -3,74 +3,74 @@ package conftest
 import (
 	"testing"
 
+	"github.com/prashantv/gostub"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/prashantv/gostub"
 )
 
 func TestResolvePolicyUrls(t *testing.T) {
 	tests := []struct {
-		name                string
-		predefinedAlias     string
-		customUrls          []string
-		wantErr             bool
-		errMsg              string
-		expectedUrlCount    int
-		expectedUrls        []string
+		name             string
+		predefinedAlias  string
+		customUrls       []string
+		wantErr          bool
+		errMsg           string
+		expectedUrlCount int
+		expectedUrls     []string
 	}{
 		{
-			name:                "should resolve APRL predefined policies",
-			predefinedAlias:     "aprl",
-			wantErr:             false,
-			expectedUrlCount:    1,
-			expectedUrls:        []string{"git::https://github.com/Azure/policy-library-avm.git//policy/Azure-Proactive-Resiliency-Library-v2"},
+			name:             "should resolve APRL predefined policies",
+			predefinedAlias:  "aprl",
+			wantErr:          false,
+			expectedUrlCount: 1,
+			expectedUrls:     []string{"git::https://github.com/Azure/policy-library-avm.git//policy/Azure-Proactive-Resiliency-Library-v2"},
 		},
 		{
-			name:                "should resolve AVMSEC predefined policies",
-			predefinedAlias:     "avmsec",
-			wantErr:             false,
-			expectedUrlCount:    1,
-			expectedUrls:        []string{"git::https://github.com/Azure/policy-library-avm.git//policy/avmsec"},
+			name:             "should resolve AVMSEC predefined policies",
+			predefinedAlias:  "avmsec",
+			wantErr:          false,
+			expectedUrlCount: 1,
+			expectedUrls:     []string{"git::https://github.com/Azure/policy-library-avm.git//policy/avmsec"},
 		},
 		{
-			name:                "should resolve ALL predefined policies",
-			predefinedAlias:     "all",
-			wantErr:             false,
-			expectedUrlCount:    2,
-			expectedUrls:        []string{
+			name:             "should resolve ALL predefined policies",
+			predefinedAlias:  "all",
+			wantErr:          false,
+			expectedUrlCount: 2,
+			expectedUrls: []string{
 				"git::https://github.com/Azure/policy-library-avm.git//policy/Azure-Proactive-Resiliency-Library-v2",
 				"git::https://github.com/Azure/policy-library-avm.git//policy/avmsec",
 			},
 		},
 		{
-			name:                "should resolve custom policy URLs",
-			customUrls:          []string{"git::https://example.com/policies.git", "https://example.com/policy.zip"},
-			wantErr:             false,
-			expectedUrlCount:    2,
-			expectedUrls:        []string{"git::https://example.com/policies.git", "https://example.com/policy.zip"},
+			name:             "should resolve custom policy URLs",
+			customUrls:       []string{"git::https://example.com/policies.git", "https://example.com/policy.zip"},
+			wantErr:          false,
+			expectedUrlCount: 2,
+			expectedUrls:     []string{"git::https://example.com/policies.git", "https://example.com/policy.zip"},
 		},
 		{
-			name:                "should default to ALL when both empty",
-			wantErr:             false,
-			expectedUrlCount:    2,
-			expectedUrls:        []string{
+			name:             "should default to ALL when both empty",
+			wantErr:          false,
+			expectedUrlCount: 2,
+			expectedUrls: []string{
 				"git::https://github.com/Azure/policy-library-avm.git//policy/Azure-Proactive-Resiliency-Library-v2",
 				"git::https://github.com/Azure/policy-library-avm.git//policy/avmsec",
 			},
 		},
 		{
-			name:                "should fail with mutually exclusive parameters",
-			predefinedAlias:     "aprl",
-			customUrls:          []string{"git::https://example.com/policies.git"},
-			wantErr:             true,
-			errMsg:              "predefined_policy_library_alias and custom_urls are mutually exclusive",
+			name:            "should fail with mutually exclusive parameters",
+			predefinedAlias: "aprl",
+			customUrls:      []string{"git::https://example.com/policies.git"},
+			wantErr:         true,
+			errMsg:          "predefined_policy_library_alias and custom_urls are mutually exclusive",
 		},
 		{
-			name:                "should fail with invalid predefined alias",
-			predefinedAlias:     "invalid",
-			wantErr:             true,
-			errMsg:              "invalid predefined_policy_library_alias: invalid",
+			name:            "should fail with invalid predefined alias",
+			predefinedAlias: "invalid",
+			wantErr:         true,
+			errMsg:          "invalid predefined_policy_library_alias: invalid",
 		},
 	}
 
