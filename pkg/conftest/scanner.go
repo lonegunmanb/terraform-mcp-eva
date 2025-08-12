@@ -127,7 +127,7 @@ func executeConftestScan(workingDir, command string) (string, error) {
 		// Conftest may exit with non-zero status when violations are found, but still provide valid output
 		if stdout != "" {
 			// Try to parse the output, if successful, treat as non-fatal
-			var result ConftestRawOutput
+			var result RawOutput
 			parseErr := json.Unmarshal([]byte(stdout), &result)
 			if parseErr == nil {
 				return stdout, nil
@@ -139,35 +139,35 @@ func executeConftestScan(workingDir, command string) (string, error) {
 	return stdout, nil
 }
 
-// ConftestRawOutput represents the raw JSON output from conftest
-type ConftestRawOutput struct {
-	Warnings  []ConftestNamespaceResult `json:"warnings"`
-	Failures  []ConftestNamespaceResult `json:"failures"`
-	Successes int                       `json:"successes"`
+// RawOutput represents the raw JSON output from conftest
+type RawOutput struct {
+	Warnings  []NamespaceResult `json:"warnings"`
+	Failures  []NamespaceResult `json:"failures"`
+	Successes int               `json:"successes"`
 }
 
-// ConftestNamespaceResult represents results for a specific namespace
-type ConftestNamespaceResult struct {
-	Filename  string                  `json:"filename"`
-	Namespace string                  `json:"namespace"`
-	Successes int                     `json:"successes,omitempty"`
-	Failures  []ConftestFailureDetail `json:"failures,omitempty"`
-	Warnings  []ConftestWarningDetail `json:"warnings,omitempty"`
+// NamespaceResult represents results for a specific namespace
+type NamespaceResult struct {
+	Filename  string          `json:"filename"`
+	Namespace string          `json:"namespace"`
+	Successes int             `json:"successes,omitempty"`
+	Failures  []FailureDetail `json:"failures,omitempty"`
+	Warnings  []WarningDetail `json:"warnings,omitempty"`
 }
 
-// ConftestFailureDetail represents a single failure
-type ConftestFailureDetail struct {
+// FailureDetail represents a single failure
+type FailureDetail struct {
 	Message string `json:"msg"`
 }
 
-// ConftestWarningDetail represents a single warning
-type ConftestWarningDetail struct {
+// WarningDetail represents a single warning
+type WarningDetail struct {
 	Message string `json:"msg"`
 }
 
 // parseConftestOutput parses conftest JSON output into violations and warnings
 func parseConftestOutput(output string) ([]PolicyViolation, []PolicyWarning, error) {
-	var rawOutput ConftestRawOutput
+	var rawOutput RawOutput
 	if err := json.Unmarshal([]byte(output), &rawOutput); err != nil {
 		return nil, nil, fmt.Errorf("failed to parse conftest output: %w", err)
 	}
@@ -336,8 +336,34 @@ func countPolicyFiles(dir string) (int, error) {
 	return count, nil
 }
 
+// downloadDefaultAVMExceptions downloads the default AVM exceptions from the Azure policy library
+func downloadDefaultAVMExceptions(tempDir string) (*PolicySource, error) {
+	const defaultAVMExceptionsURL = "https://raw.githubusercontent.com/Azure/policy-library-avm/refs/heads/main/policy/avmsec/avm_exceptions.rego.bak"
+	const exceptionsFileName = "avmsec_exceptions.rego"
+
+	// Create a dedicated directory for default exceptions
+	exceptionsDir := filepath.Join(tempDir, "default_exceptions")
+	err := fs.MkdirAll(exceptionsDir, 0755)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create default exceptions directory: %w", err)
+	}
+
+	// Download the exceptions file directly using go-getter
+	exceptionsFilePath := filepath.Join(exceptionsDir, exceptionsFileName)
+	if err := downloadPolicyToDirectory(defaultAVMExceptionsURL, exceptionsFilePath); err != nil {
+		return nil, fmt.Errorf("failed to download default AVM exceptions from %s: %w", defaultAVMExceptionsURL, err)
+	}
+
+	return &PolicySource{
+		OriginalURL:  defaultAVMExceptionsURL,
+		ResolvedPath: exceptionsDir,
+		Type:         "directory",
+		PolicyCount:  1, // Single exceptions file
+	}, nil
+}
+
 // resolvePolicySources resolves predefined policy aliases and creates policy sources
-func resolvePolicySources(param ConftestScanParam, tempDir string) ([]PolicySource, error) {
+func resolvePolicySources(param ScanParam, tempDir string) ([]PolicySource, error) {
 	var allUrls []string
 
 	// First, process predefined policy libraries if specified
@@ -373,6 +399,15 @@ func resolvePolicySources(param ConftestScanParam, tempDir string) ([]PolicySour
 		policySources = append(policySources, *source)
 	}
 
+	// Handle default AVM exceptions if requested
+	if param.IncludeDefaultAVMExceptions {
+		defaultExceptionsSource, err := downloadDefaultAVMExceptions(tempDir)
+		if err != nil {
+			return nil, fmt.Errorf("failed to download default AVM exceptions: %w", err)
+		}
+		policySources = append(policySources, *defaultExceptionsSource)
+	}
+
 	// Handle ignored policies if any
 	if len(param.IgnoredPolicies) > 0 {
 		exceptionPaths, err := createIgnoreConfig(param.IgnoredPolicies, tempDir)
@@ -396,7 +431,7 @@ func resolvePolicySources(param ConftestScanParam, tempDir string) ([]PolicySour
 }
 
 // Scan performs a conftest scan with the given parameters
-func Scan(param ConftestScanParam) (*ConftestScanResult, error) {
+func Scan(param ScanParam) (*ScanResult, error) {
 	// Validate parameters
 	if err := param.Validate(); err != nil {
 		return nil, fmt.Errorf("parameter validation failed: %w", err)
@@ -436,14 +471,14 @@ func Scan(param ConftestScanParam) (*ConftestScanResult, error) {
 	}
 
 	// Build result
-	result := &ConftestScanResult{
+	result := &ScanResult{
 		Success:       true,
 		PlanFile:      param.PlanFile,
 		PolicySources: policySources,
 		Violations:    violations,
 		Warnings:      warnings,
 		Output:        output,
-		Summary: ConftestSummary{
+		Summary: Summary{
 			TotalViolations: len(violations),
 			ErrorCount:      len(violations),
 			WarningCount:    len(warnings),

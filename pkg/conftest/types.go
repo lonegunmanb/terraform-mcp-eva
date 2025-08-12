@@ -4,19 +4,18 @@ import (
 	"fmt"
 )
 
-// ConftestScanParam - Input parameters for conftest scanning
-type ConftestScanParam struct {
+// ScanParam - Input parameters for conftest scanning
+type ScanParam struct {
 	PreDefinedPolicyLibraryAlias string          `json:"predefined_policy_library_alias,omitempty"` // "aprl", "avmsec", "all" - mutually exclusive with PolicyUrls
 	PolicyUrls                   []string        `json:"policy_urls,omitempty"`                     // Array of policy URLs in go-getter format
 	PlanFile                     string          `json:"plan_file"`                                 // Required pre-generated plan file path (JSON format)
-	LocalPolicyDirs              []string        `json:"local_policy_dirs,omitempty"`               // Local policy directories to include
 	IgnoredPolicies              []IgnoredPolicy `json:"ignored_policies,omitempty"`                // Policies to ignore with namespace and name
 	Namespaces                   []string        `json:"namespaces,omitempty"`                      // Specific namespaces to test (default: all)
 	IncludeDefaultAVMExceptions  bool            `json:"include_default_avm_exceptions,omitempty"`  // Whether to download and include default AVM exceptions
 }
 
-// Validate validates the ConftestScanParam
-func (p *ConftestScanParam) Validate() error {
+// Validate validates the ScanParam
+func (p *ScanParam) Validate() error {
 	// Check mutually exclusive parameters
 	if p.PreDefinedPolicyLibraryAlias != "" && len(p.PolicyUrls) > 0 {
 		return fmt.Errorf("predefined_policy_library_alias and policy_urls are mutually exclusive")
@@ -69,15 +68,15 @@ func (p *IgnoredPolicy) Validate() error {
 	return nil
 }
 
-// ConftestScanResult - Output structure
-type ConftestScanResult struct {
+// ScanResult - Output structure
+type ScanResult struct {
 	Success       bool              `json:"success"`
 	PlanFile      string            `json:"plan_file"`
 	PolicySources []PolicySource    `json:"policy_sources"` // Details of resolved policy sources
 	Violations    []PolicyViolation `json:"violations,omitempty"`
 	Warnings      []PolicyWarning   `json:"warnings,omitempty"`
 	Output        string            `json:"output"`
-	Summary       ConftestSummary   `json:"summary"`
+	Summary       Summary           `json:"summary"`
 }
 
 // PolicySource - Information about a resolved policy source
@@ -107,8 +106,8 @@ type PolicyWarning struct {
 	Resource  string `json:"resource,omitempty"`
 }
 
-// ConftestSummary - Scan summary statistics
-type ConftestSummary struct {
+// Summary - Scan summary statistics
+type Summary struct {
 	TotalViolations int `json:"total_violations"`
 	ErrorCount      int `json:"error_count"`
 	WarningCount    int `json:"warning_count"`

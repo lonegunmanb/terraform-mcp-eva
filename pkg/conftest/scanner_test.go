@@ -2,6 +2,7 @@ package conftest
 
 import (
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -396,7 +397,7 @@ func TestScan_EndToEnd(t *testing.T) {
 	tests := []struct {
 		name                   string
 		setupFs                func(fs afero.Fs)
-		param                  ConftestScanParam
+		param                  ScanParam
 		setupCommands          func(mock *MockCommandExecutor)
 		expectError            bool
 		expectedViolationCount int
@@ -407,7 +408,7 @@ func TestScan_EndToEnd(t *testing.T) {
 				require.NoError(t, fs.MkdirAll("/test", 0755))
 				require.NoError(t, afero.WriteFile(fs, "/test/plan.json", []byte(`{"terraform_version": "1.0.0"}`), 0644))
 			},
-			param: ConftestScanParam{
+			param: ScanParam{
 				PreDefinedPolicyLibraryAlias: "aprl",
 				PlanFile:                     "/test/plan.json",
 			},
@@ -433,7 +434,7 @@ func TestScan_EndToEnd(t *testing.T) {
 				require.NoError(t, fs.MkdirAll("/test", 0755))
 				require.NoError(t, afero.WriteFile(fs, "/test/plan.json", []byte(`{"terraform_version": "1.0.0"}`), 0644))
 			},
-			param: ConftestScanParam{
+			param: ScanParam{
 				PolicyUrls: []string{"git::https://example.com/policies.git"},
 				PlanFile:   "/test/plan.json",
 			},
@@ -469,7 +470,7 @@ func TestScan_EndToEnd(t *testing.T) {
 			setupFs: func(fs afero.Fs) {
 				// Don't create the plan file
 			},
-			param: ConftestScanParam{
+			param: ScanParam{
 				PreDefinedPolicyLibraryAlias: "aprl",
 				PlanFile:                     "/test/nonexistent.json",
 			},
@@ -482,7 +483,7 @@ func TestScan_EndToEnd(t *testing.T) {
 				require.NoError(t, fs.MkdirAll("/test", 0755))
 				require.NoError(t, afero.WriteFile(fs, "/test/plan.json", []byte(`{"terraform_version": "1.0.0"}`), 0644))
 			},
-			param: ConftestScanParam{
+			param: ScanParam{
 				PreDefinedPolicyLibraryAlias: "aprl",
 				PlanFile:                     "/test/plan.json",
 				IgnoredPolicies: []IgnoredPolicy{
@@ -749,4 +750,154 @@ func TestDownloadPolicy_Integration(t *testing.T) {
 	assert.True(t, regoFileCount > 0, "Should find at least one .rego policy file")
 
 	t.Logf("Successfully downloaded %d policy files to %s", regoFileCount, tempDir)
+}
+
+func TestDownloadDefaultAVMExceptions(t *testing.T) {
+	// Setup
+	mockFs := afero.NewMemMapFs()
+	originalFs := fs
+	fs = mockFs
+	defer func() { fs = originalFs }()
+
+	// Create temp directory
+	tempDir, err := afero.TempDir(fs, "", "test-*")
+	require.NoError(t, err)
+
+	// Mock the policy downloader
+	mockDownloader := &MockPolicyDownloader{
+		downloads: map[string]*MockDownloadResult{
+			"https://raw.githubusercontent.com/Azure/policy-library-avm/refs/heads/main/policy/avmsec/avm_exceptions.rego.bak": {err: nil},
+		},
+		setupPolicyFiles: func(fs afero.Fs, destDir string, url string) error {
+			// Create the expected file structure for default AVM exceptions
+			exceptionsContent := `package avmsec
+
+import rego.v1
+
+exception contains ["test_exception"] if {
+    true
+}`
+			return afero.WriteFile(fs, filepath.Join(destDir, "avmsec_exceptions.rego"), []byte(exceptionsContent), 0644)
+		},
+	}
+	originalPolicyDownloader := policyDownloader
+	policyDownloader = mockDownloader
+	defer func() { policyDownloader = originalPolicyDownloader }()
+
+	// Test the function
+	source, err := downloadDefaultAVMExceptions(tempDir)
+
+	// Assertions
+	require.NoError(t, err)
+	assert.NotNil(t, source)
+	assert.Equal(t, "https://raw.githubusercontent.com/Azure/policy-library-avm/refs/heads/main/policy/avmsec/avm_exceptions.rego.bak", source.OriginalURL)
+	assert.Equal(t, filepath.Join(tempDir, "default_exceptions"), source.ResolvedPath)
+	assert.Equal(t, "directory", source.Type)
+	assert.Equal(t, 1, source.PolicyCount)
+
+	// Verify the exceptions file was created
+	exceptionsFilePath := filepath.Join(tempDir, "default_exceptions", "avmsec_exceptions.rego")
+	exists, err := afero.Exists(fs, exceptionsFilePath)
+	require.NoError(t, err)
+	assert.True(t, exists, "Exceptions file should exist")
+}
+
+func TestResolvePolicySources_WithDefaultAVMExceptions(t *testing.T) {
+	// Setup
+	mockFs := afero.NewMemMapFs()
+	originalFs := fs
+	fs = mockFs
+	defer func() { fs = originalFs }()
+
+	// Create temp directory
+	tempDir, err := afero.TempDir(fs, "", "test-*")
+	require.NoError(t, err)
+
+	// Mock the policy downloader
+	mockDownloader := &MockPolicyDownloader{
+		downloads: map[string]*MockDownloadResult{
+			"git::https://github.com/Azure/policy-library-avm.git//policy/Azure-Proactive-Resiliency-Library-v2":               {err: nil},
+			"git::https://github.com/Azure/policy-library-avm.git//policy/avmsec":                                              {err: nil},
+			"https://raw.githubusercontent.com/Azure/policy-library-avm/refs/heads/main/policy/avmsec/avm_exceptions.rego.bak": {err: nil},
+		},
+		setupPolicyFiles: func(fs afero.Fs, destDir string, url string) error {
+			// Create sample .rego files for different policy sources
+			return afero.WriteFile(fs, filepath.Join(destDir, "sample.rego"), []byte("package test"), 0644)
+		},
+	}
+	originalPolicyDownloader := policyDownloader
+	policyDownloader = mockDownloader
+	defer func() { policyDownloader = originalPolicyDownloader }()
+
+	// Test parameter with IncludeDefaultAVMExceptions enabled
+	param := ScanParam{
+		PreDefinedPolicyLibraryAlias: "all",
+		PlanFile:                     "plan.json",
+		IncludeDefaultAVMExceptions:  true,
+	}
+
+	// Execute
+	sources, err := resolvePolicySources(param, tempDir)
+
+	// Assertions
+	require.NoError(t, err)
+	assert.Len(t, sources, 3) // 2 from "all" predefined + 1 default exceptions
+
+	// Check that default AVM exceptions source is included
+	found := false
+	for _, source := range sources {
+		if source.OriginalURL == "https://raw.githubusercontent.com/Azure/policy-library-avm/refs/heads/main/policy/avmsec/avm_exceptions.rego.bak" {
+			found = true
+			assert.Equal(t, "directory", source.Type)
+			assert.Equal(t, 1, source.PolicyCount)
+			break
+		}
+	}
+	assert.True(t, found, "Default AVM exceptions source should be included")
+}
+
+func TestResolvePolicySources_WithoutDefaultAVMExceptions(t *testing.T) {
+	// Setup
+	mockFs := afero.NewMemMapFs()
+	originalFs := fs
+	fs = mockFs
+	defer func() { fs = originalFs }()
+
+	// Create temp directory
+	tempDir, err := afero.TempDir(fs, "", "test-*")
+	require.NoError(t, err)
+
+	// Mock the policy downloader
+	mockDownloader := &MockPolicyDownloader{
+		downloads: map[string]*MockDownloadResult{
+			"git::https://github.com/Azure/policy-library-avm.git//policy/Azure-Proactive-Resiliency-Library-v2": {err: nil},
+			"git::https://github.com/Azure/policy-library-avm.git//policy/avmsec":                                {err: nil},
+		},
+		setupPolicyFiles: func(fs afero.Fs, destDir string, url string) error {
+			// Create sample .rego files for different policy sources
+			return afero.WriteFile(fs, filepath.Join(destDir, "sample.rego"), []byte("package test"), 0644)
+		},
+	}
+	originalPolicyDownloader := policyDownloader
+	policyDownloader = mockDownloader
+	defer func() { policyDownloader = originalPolicyDownloader }()
+
+	// Test parameter with IncludeDefaultAVMExceptions disabled (default)
+	param := ScanParam{
+		PreDefinedPolicyLibraryAlias: "all",
+		PlanFile:                     "plan.json",
+		IncludeDefaultAVMExceptions:  false,
+	}
+
+	// Execute
+	sources, err := resolvePolicySources(param, tempDir)
+
+	// Assertions
+	require.NoError(t, err)
+	assert.Len(t, sources, 2) // Only 2 from "all" predefined, no default exceptions
+
+	// Check that default AVM exceptions source is NOT included
+	for _, source := range sources {
+		assert.NotEqual(t, "https://raw.githubusercontent.com/Azure/policy-library-avm/refs/heads/main/policy/avmsec/avm_exceptions.rego.bak", source.OriginalURL)
+	}
 }

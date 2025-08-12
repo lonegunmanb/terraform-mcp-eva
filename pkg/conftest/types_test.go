@@ -8,16 +8,16 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestConftestScanParam_Validation(t *testing.T) {
+func TestScanParam_Validation(t *testing.T) {
 	tests := []struct {
 		name    string
-		param   ConftestScanParam
+		param   ScanParam
 		wantErr bool
 		errMsg  string
 	}{
 		{
 			name: "mutually exclusive - both predefined alias and policy urls provided",
-			param: ConftestScanParam{
+			param: ScanParam{
 				PreDefinedPolicyLibraryAlias: "aprl",
 				PolicyUrls:                   []string{"git::https://example.com/policies.git"},
 				PlanFile:                     "plan.json",
@@ -27,7 +27,7 @@ func TestConftestScanParam_Validation(t *testing.T) {
 		},
 		{
 			name: "valid predefined alias only",
-			param: ConftestScanParam{
+			param: ScanParam{
 				PreDefinedPolicyLibraryAlias: "aprl",
 				PlanFile:                     "plan.json",
 			},
@@ -35,7 +35,7 @@ func TestConftestScanParam_Validation(t *testing.T) {
 		},
 		{
 			name: "valid policy urls only",
-			param: ConftestScanParam{
+			param: ScanParam{
 				PolicyUrls: []string{"git::https://example.com/policies.git"},
 				PlanFile:   "plan.json",
 			},
@@ -43,7 +43,7 @@ func TestConftestScanParam_Validation(t *testing.T) {
 		},
 		{
 			name: "missing plan file",
-			param: ConftestScanParam{
+			param: ScanParam{
 				PreDefinedPolicyLibraryAlias: "aprl",
 			},
 			wantErr: true,
@@ -51,7 +51,7 @@ func TestConftestScanParam_Validation(t *testing.T) {
 		},
 		{
 			name: "invalid predefined alias",
-			param: ConftestScanParam{
+			param: ScanParam{
 				PreDefinedPolicyLibraryAlias: "invalid",
 				PlanFile:                     "plan.json",
 			},
@@ -60,7 +60,7 @@ func TestConftestScanParam_Validation(t *testing.T) {
 		},
 		{
 			name: "valid ignored policies with namespace and name",
-			param: ConftestScanParam{
+			param: ScanParam{
 				PreDefinedPolicyLibraryAlias: "aprl",
 				PlanFile:                     "plan.json",
 				IgnoredPolicies: []IgnoredPolicy{
@@ -72,7 +72,7 @@ func TestConftestScanParam_Validation(t *testing.T) {
 		},
 		{
 			name: "invalid ignored policy - missing namespace",
-			param: ConftestScanParam{
+			param: ScanParam{
 				PreDefinedPolicyLibraryAlias: "aprl",
 				PlanFile:                     "plan.json",
 				IgnoredPolicies: []IgnoredPolicy{
@@ -84,7 +84,7 @@ func TestConftestScanParam_Validation(t *testing.T) {
 		},
 		{
 			name: "invalid ignored policy - missing name",
-			param: ConftestScanParam{
+			param: ScanParam{
 				PreDefinedPolicyLibraryAlias: "aprl",
 				PlanFile:                     "plan.json",
 				IgnoredPolicies: []IgnoredPolicy{
@@ -157,8 +157,8 @@ func TestIgnoredPolicy_Validation(t *testing.T) {
 	}
 }
 
-func TestConftestScanResult_JSONSerialization(t *testing.T) {
-	result := ConftestScanResult{
+func TestScanResult_JSONSerialization(t *testing.T) {
+	result := ScanResult{
 		Success:  true,
 		PlanFile: "plan.json",
 		PolicySources: []PolicySource{
@@ -175,7 +175,7 @@ func TestConftestScanResult_JSONSerialization(t *testing.T) {
 			},
 		},
 		Output: "conftest output",
-		Summary: ConftestSummary{
+		Summary: Summary{
 			TotalViolations: 1,
 			ErrorCount:      1,
 			WarningCount:    0,
@@ -189,7 +189,7 @@ func TestConftestScanResult_JSONSerialization(t *testing.T) {
 	require.NoError(t, err)
 
 	// Test JSON unmarshaling
-	var unmarshaled ConftestScanResult
+	var unmarshaled ScanResult
 	err = json.Unmarshal(data, &unmarshaled)
 	require.NoError(t, err)
 
