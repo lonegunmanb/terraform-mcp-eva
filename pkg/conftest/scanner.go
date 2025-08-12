@@ -1,13 +1,18 @@
 package conftest
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
+	"time"
 
+	getter "github.com/hashicorp/go-getter/v2"
 	"github.com/spf13/afero"
 )
 
@@ -31,17 +36,48 @@ func (r *RealCommandExecutor) ExecuteCommand(dir, command string) (stdout, stder
 	stdoutBytes, err := cmd.Output()
 	if err != nil {
 		var exitError *exec.ExitError
-		if err != nil {
+		if errors.As(err, &exitError) {
 			return string(stdoutBytes), string(exitError.Stderr), err
 		}
-		return string(stdoutBytes), "", err
 	}
 
-	return string(stdoutBytes), "", nil
+	return string(stdoutBytes), "", err
 }
 
 // Global command executor for testing (following tflint pattern)
 var commandExecutor CommandExecutor = &RealCommandExecutor{}
+
+// PolicyDownloader interface for downloading policy sources (following tflint pattern)
+type PolicyDownloader interface {
+	DownloadPolicy(url, destDir string) error
+}
+
+// RealPolicyDownloader implements PolicyDownloader using go-getter
+type RealPolicyDownloader struct{}
+
+func (r *RealPolicyDownloader) DownloadPolicy(url, destDir string) error {
+	// Apply timeout with env var override (default 60s, override via CONFTEST_POLICY_DOWNLOAD_TIMEOUT_SECONDS)
+	timeout := 60 * time.Second
+	if v := os.Getenv("CONFTEST_POLICY_DOWNLOAD_TIMEOUT_SECONDS"); v != "" {
+		if secs, parseErr := strconv.Atoi(v); parseErr == nil && secs > 0 {
+			timeout = time.Duration(secs) * time.Second
+		}
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	// Use go-getter to download to the destination directory
+	// GetAny supports both files and directories, which is what we need for policy sources
+	if _, err := getter.GetAny(ctx, destDir, url); err != nil {
+		return fmt.Errorf("go-getter GetAny failed for URL %s: %w", url, err)
+	}
+
+	return nil
+}
+
+// Global policy downloader for testing (following tflint pattern)
+var policyDownloader PolicyDownloader = &RealPolicyDownloader{}
 
 // validateTargetPlan validates that the plan file exists and is a file
 func validateTargetPlan(planFile string) error {
@@ -241,6 +277,124 @@ func writeFile(filename, content string) error {
 	return afero.WriteFile(fs, filename, []byte(content), 0644)
 }
 
+// resolvePredefinedPolicyLibrary resolves predefined policy library aliases to URLs
+func resolvePredefinedPolicyLibrary(alias string) ([]string, error) {
+	urls, exists := predefinedPolicyConfigs[alias]
+	if !exists {
+		return nil, fmt.Errorf("invalid predefined_policy_library_alias: %s", alias)
+	}
+	return urls, nil
+}
+
+// downloadPolicySource downloads a policy source from a URL and returns a PolicySource
+func downloadPolicySource(url, tempDir string) (*PolicySource, error) {
+	// Create a unique subdirectory for this policy source
+	policyDir, err := afero.TempDir(fs, tempDir, "policy-*")
+	if err != nil {
+		return nil, fmt.Errorf("failed to create policy directory: %w", err)
+	}
+
+	// Download the policy source using go-getter
+	if err := downloadPolicyToDirectory(url, policyDir); err != nil {
+		return nil, fmt.Errorf("failed to download policy from %s: %w", url, err)
+	}
+
+	// Count the number of policy files in the downloaded directory
+	policyCount, err := countPolicyFiles(policyDir)
+	if err != nil {
+		return nil, fmt.Errorf("failed to count policy files in %s: %w", policyDir, err)
+	}
+
+	return &PolicySource{
+		OriginalURL:  url,
+		ResolvedPath: policyDir,
+		Type:         "directory",
+		PolicyCount:  policyCount,
+	}, nil
+}
+
+// downloadPolicyToDirectory downloads a policy source to a directory using go-getter
+func downloadPolicyToDirectory(url, destDir string) error {
+	return policyDownloader.DownloadPolicy(url, destDir)
+}
+
+// countPolicyFiles counts the number of .rego files in a directory recursively
+func countPolicyFiles(dir string) (int, error) {
+	count := 0
+	err := afero.Walk(fs, dir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if !info.IsDir() && strings.HasSuffix(strings.ToLower(info.Name()), ".rego") {
+			count++
+		}
+		return nil
+	})
+	if err != nil {
+		return 0, err
+	}
+	return count, nil
+}
+
+// resolvePolicySources resolves predefined policy aliases and creates policy sources
+func resolvePolicySources(param ConftestScanParam, tempDir string) ([]PolicySource, error) {
+	var allUrls []string
+
+	// First, process predefined policy libraries if specified
+	if param.PreDefinedPolicyLibraryAlias != "" {
+		predefinedUrls, err := resolvePredefinedPolicyLibrary(param.PreDefinedPolicyLibraryAlias)
+		if err != nil {
+			return nil, fmt.Errorf("predefined policy library resolution failed: %w", err)
+		}
+		allUrls = append(allUrls, predefinedUrls...)
+	}
+
+	// Then, process custom policy URLs
+	if len(param.PolicyUrls) > 0 {
+		allUrls = append(allUrls, param.PolicyUrls...)
+	}
+
+	// If neither predefined nor custom URLs are provided, use default "all"
+	if len(allUrls) == 0 {
+		predefinedUrls, err := resolvePredefinedPolicyLibrary("all")
+		if err != nil {
+			return nil, fmt.Errorf("default policy library resolution failed: %w", err)
+		}
+		allUrls = append(allUrls, predefinedUrls...)
+	}
+
+	// Download and create policy sources
+	var policySources []PolicySource
+	for _, url := range allUrls {
+		source, err := downloadPolicySource(url, tempDir)
+		if err != nil {
+			return nil, fmt.Errorf("failed to download policy source %s: %w", url, err)
+		}
+		policySources = append(policySources, *source)
+	}
+
+	// Handle ignored policies if any
+	if len(param.IgnoredPolicies) > 0 {
+		exceptionPaths, err := createIgnoreConfig(param.IgnoredPolicies, tempDir)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create ignore config: %w", err)
+		}
+
+		// Add exception paths as additional policy sources
+		for _, path := range exceptionPaths {
+			source := PolicySource{
+				OriginalURL:  "ignore-config",
+				ResolvedPath: path,
+				Type:         "directory",
+				PolicyCount:  1, // Each exception file counts as 1 policy
+			}
+			policySources = append(policySources, source)
+		}
+	}
+
+	return policySources, nil
+}
+
 // Scan performs a conftest scan with the given parameters
 func Scan(param ConftestScanParam) (*ConftestScanResult, error) {
 	// Validate parameters
@@ -260,39 +414,10 @@ func Scan(param ConftestScanParam) (*ConftestScanResult, error) {
 	}
 	defer fs.RemoveAll(tempDir) // Ensure cleanup
 
-	// Resolve policy URLs
-	urls, err := resolvePolicyUrls(param.PreDefinedPolicyLibraryAlias, param.PolicyUrls)
+	// Resolve and prepare policy sources
+	policySources, err := resolvePolicySources(param, tempDir)
 	if err != nil {
-		return nil, fmt.Errorf("policy URL resolution failed: %w", err)
-	}
-
-	// Mock policy sources for now (in real implementation, these would be downloaded)
-	var policySources []PolicySource
-	for _, url := range urls {
-		policySources = append(policySources, PolicySource{
-			OriginalURL:  url,
-			ResolvedPath: "/tmp/mock-policies", // Mock path for testing
-			Type:         "directory",
-			PolicyCount:  5,
-		})
-	}
-
-	// Handle ignored policies if any
-	if len(param.IgnoredPolicies) > 0 {
-		exceptionPaths, err := createIgnoreConfig(param.IgnoredPolicies, tempDir)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create ignore config: %w", err)
-		}
-
-		// Add exception paths as additional policy sources
-		for _, path := range exceptionPaths {
-			policySources = append(policySources, PolicySource{
-				OriginalURL:  "ignore-config",
-				ResolvedPath: path,
-				Type:         "directory",
-				PolicyCount:  1, // Each exception file counts as 1 policy
-			})
-		}
+		return nil, fmt.Errorf("policy source resolution failed: %w", err)
 	}
 
 	// Build conftest command
