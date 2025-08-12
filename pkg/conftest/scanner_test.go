@@ -1,6 +1,7 @@
 package conftest
 
 import (
+	"os"
 	"strings"
 	"testing"
 
@@ -39,6 +40,48 @@ func (m *MockCommandExecutor) ExecuteCommand(dir, command string) (string, strin
 	}
 
 	return "", "", assert.AnError
+}
+
+// MockPolicyDownloader for testing policy downloading
+type MockPolicyDownloader struct {
+	downloads        map[string]*MockDownloadResult
+	setupPolicyFiles func(fs afero.Fs, destDir string, url string) error
+}
+
+type MockDownloadResult struct {
+	err error
+}
+
+func (m *MockPolicyDownloader) DownloadPolicy(url, destDir string) error {
+	// Check if there's a specific result for this URL
+	if m.downloads != nil {
+		if result, exists := m.downloads[url]; exists {
+			if result.err != nil {
+				return result.err
+			}
+		}
+	}
+
+	// If no error, setup mock policy files
+	if m.setupPolicyFiles != nil {
+		return m.setupPolicyFiles(fs, destDir, url)
+	}
+
+	// Default behavior - create some mock .rego files
+	return m.createDefaultMockPolicies(destDir)
+}
+
+func (m *MockPolicyDownloader) createDefaultMockPolicies(destDir string) error {
+	// Create some default mock policy files
+	policyContent := `package main
+
+import rego.v1
+
+deny[msg] {
+	msg := "Test policy violation"
+}`
+
+	return afero.WriteFile(fs, destDir+"/test_policy.rego", []byte(policyContent), 0644)
 }
 
 func TestValidateTargetPlan(t *testing.T) {
@@ -486,6 +529,26 @@ func TestScan_EndToEnd(t *testing.T) {
 			commandStubs := gostub.Stub(&commandExecutor, mockExecutor)
 			defer commandStubs.Reset()
 
+			// Mock policy downloader
+			mockDownloader := &MockPolicyDownloader{
+				downloads: make(map[string]*MockDownloadResult),
+				setupPolicyFiles: func(fs afero.Fs, destDir string, url string) error {
+					// Create mock policy files for any URL
+					require.NoError(t, fs.MkdirAll(destDir, 0755))
+					policyContent := `package main
+
+import rego.v1
+
+deny[msg] {
+	msg := "Test policy from ` + url + `"
+}`
+					return afero.WriteFile(fs, destDir+"/mock_policy.rego", []byte(policyContent), 0644)
+				},
+			}
+
+			downloaderStubs := gostub.Stub(&policyDownloader, mockDownloader)
+			defer downloaderStubs.Reset()
+
 			// Execute
 			result, err := Scan(tt.param)
 
@@ -500,10 +563,20 @@ func TestScan_EndToEnd(t *testing.T) {
 
 				// For cleanup test, verify no temporary directories remain
 				if tt.name == "should cleanup temporary directories after scan with ignored policies" {
-					// Check that no conftest-scan-* directories exist in the temp area
-					// In a real filesystem, this would verify temp directories are cleaned up
-					// In our memory filesystem, the cleanup already happened due to defer
-					assert.True(t, true, "Cleanup verification passed (handled by defer)")
+					// Verify temp directory count is back to original
+					// Since we're using a memory filesystem, we can check the root directory
+					tempDirsAfter, err := afero.ReadDir(fs, "/")
+					require.NoError(t, err)
+
+					// Count directories that start with "conftest-scan-" pattern
+					confTestDirCount := 0
+					for _, dir := range tempDirsAfter {
+						if dir.IsDir() && strings.HasPrefix(dir.Name(), "conftest-scan-") {
+							confTestDirCount++
+						}
+					}
+
+					assert.Equal(t, 0, confTestDirCount, "All temporary conftest-scan-* directories should be cleaned up")
 				}
 			}
 		})
@@ -622,4 +695,58 @@ func TestCreateIgnoreConfig(t *testing.T) {
 			}
 		})
 	}
+}
+
+// TestDownloadPolicy_Integration tests the actual policy downloading functionality
+// This is an integration test that requires network access and downloads real policies
+func TestDownloadPolicy_Integration(t *testing.T) {
+	// Skip this test in short mode or if running in CI without network access
+	if testing.Short() {
+		t.Skip("Skipping integration test in short mode")
+	}
+
+	// Use real filesystem for this integration test
+	realFs := afero.NewOsFs()
+	stubs := gostub.Stub(&fs, realFs)
+	defer stubs.Reset()
+
+	// Create a temporary directory for the test
+	tempDir, err := afero.TempDir(fs, "", "conftest-integration-test")
+	require.NoError(t, err)
+	defer func() {
+		_ = fs.RemoveAll(tempDir) // Cleanup after test
+	}()
+
+	// Create real policy downloader instance
+	downloader := &RealPolicyDownloader{}
+
+	// Test URL: Azure policy library AVM policies
+	testURL := "git::https://github.com/Azure/policy-library-avm.git//policy"
+
+	// Execute the download
+	err = downloader.DownloadPolicy(testURL, tempDir)
+
+	// Assertions
+	assert.NoError(t, err, "Policy download should succeed")
+
+	// Verify that files were actually downloaded
+	files, err := afero.ReadDir(fs, tempDir)
+	require.NoError(t, err)
+	assert.True(t, len(files) > 0, "Downloaded directory should contain files")
+
+	// Verify that .rego policy files exist
+	regoFileCount := 0
+	err = afero.Walk(fs, tempDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if !info.IsDir() && strings.HasSuffix(strings.ToLower(info.Name()), ".rego") {
+			regoFileCount++
+		}
+		return nil
+	})
+	require.NoError(t, err)
+	assert.True(t, regoFileCount > 0, "Should find at least one .rego policy file")
+
+	t.Logf("Successfully downloaded %d policy files to %s", regoFileCount, tempDir)
 }
