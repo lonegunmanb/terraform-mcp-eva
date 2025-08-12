@@ -1,5 +1,10 @@
 # TODO: Add Conftest Tool Implementation
 
+## Current Status (August 12, 2025)
+- ✅ **Phase 1 Complete**: Core types and infrastructure implemented
+- ✅ **Phase 2 Complete**: Configuration management (policy URL resolution) following TDD
+- 📍 **Next**: Implement `scanner_test.go` → `scanner.go` following TDD (no implementation without tests)
+
 ## Overview
 Add a `conftest_scan` tool to terraform-mcp-eva that provides policy testing capabilities for Terraform plans using Open Policy Agent (OPA) Conftest, following the existing `tflint_scan` tool architecture and TDD principles.
 
@@ -102,21 +107,21 @@ type ConftestSummary struct {
 ### 1.2 TDD Implementation Order
 
 1. **`types_test.go`** → **`types.go`** (✅ Complete)
-   - Parameter validation (mutually exclusive options, required fields)
-   - JSON serialization (public vs internal fields)
-   - Ignored policy validation
+   - ✅ Parameter validation (mutually exclusive options, required fields)
+   - ✅ JSON serialization (public vs internal fields)
+   - ✅ Ignored policy validation
 
-2. **`config_test.go`** → **`config.go`** (Next)
-   - Policy URL resolution (predefined vs custom)
-   - Policy download mocking
-   - Default exceptions handling
+2. **`config_test.go`** → **`config.go`** (✅ Complete)
+   - ✅ Policy URL resolution (predefined vs custom)
+   - ✅ Test coverage and validation
+   - ✅ Cleaned up unused functions (following TDD principles)
 
-3. **`scanner_test.go`** → **`scanner.go`**
+3. **`scanner_test.go`** → **`scanner.go`** (Pending)
    - Command execution mocking
    - Output parsing
    - Error handling
 
-4. **`utils_test.go`** → **`utils.go`**
+4. **`utils_test.go`** → **`utils.go`** (Pending)
    - Helper functions
    - Validation utilities
 
@@ -234,11 +239,11 @@ type MockGetter struct {
 
 ## Migration Strategy
 
-1. **Phase 1**: Core infrastructure without breaking existing functionality
-2. **Phase 2**: Configuration management with comprehensive testing  
-3. **Phase 3**: Scanner implementation with mocked dependencies
-4. **Phase 4**: MCP integration and advanced features
-5. **Phase 5**: Documentation and final testing
+1. **Phase 1**: Core infrastructure without breaking existing functionality ✅
+2. **Phase 2**: Configuration management with comprehensive testing ✅
+3. **Phase 3**: Scanner implementation with mocked dependencies 🔄
+4. **Phase 4**: MCP integration and advanced features (Pending)
+5. **Phase 5**: Documentation and final testing (Pending)
 
 ## Notes
 
@@ -1317,11 +1322,11 @@ Alternatively using predefined policy library alias:
 
 ## Migration Strategy
 
-1. **Phase 1**: Implement core infrastructure without breaking existing functionality
-2. **Phase 2**: Add configuration management with thorough testing
-3. **Phase 3**: Integrate MCP tool interface
-4. **Phase 4**: Add advanced features incrementally
-5. **Phase 5**: Comprehensive testing and documentation
+1. **Phase 1**: Implement core infrastructure without breaking existing functionality ✅
+2. **Phase 2**: Add configuration management with thorough testing ✅
+3. **Phase 3**: Integrate MCP tool interface 🔄
+4. **Phase 4**: Add advanced features incrementally (Pending)
+5. **Phase 5**: Comprehensive testing and documentation (Pending)
 
 ## Success Criteria
 
