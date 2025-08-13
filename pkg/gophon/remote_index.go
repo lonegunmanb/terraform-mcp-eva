@@ -14,6 +14,7 @@ var ProviderIndexMap = map[string]string{
 
 const (
 	AzureRMInternal = "github.com/hashicorp/terraform-provider-azurerm/internal"
+	AzureGoHelpers  = "github.com/hashicorp/go-azure-helpers"
 	AzureADInternal = "github.com/hashicorp/terraform-provider-azuread/internal"
 	AWSInternal     = "github.com/hashicorp/terraform-provider-aws/internal"
 )
@@ -23,6 +24,7 @@ var Namespaces = func() []string {
 	for k, _ := range RemoteIndexMap {
 		s = append(s, k)
 	}
+	s = append(s, AzureGoHelpers)
 	return s
 }()
 
@@ -41,6 +43,11 @@ var RemoteIndexMap = map[string]RemoteIndex{
 		GitHubOwner: "lonegunmanb",
 		GitHubRepo:  "terraform-provider-aws-index",
 		PackagePath: "github.com/hashicorp/terraform-provider-aws",
+	},
+	AzureGoHelpers: {
+		GitHubOwner: "lonegunmanb",
+		GitHubRepo:  "hashicorp-go-azure-helpers-index",
+		PackagePath: "github.com/hashicorp/go-azure-helpers",
 	},
 }
 
