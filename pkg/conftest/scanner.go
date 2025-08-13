@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math/rand"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -98,7 +99,7 @@ func validateTargetPlan(planFile string) error {
 
 // buildConftestCommand builds the conftest command with policy sources and options
 func buildConftestCommand(planFile string, policySources []PolicySource, namespaces []string) string {
-	parts := []string{"conftest", "test"}
+	parts := []string{"conftest", "test", "--no-color", "-o", "json"}
 
 	// Add namespace flags
 	if len(namespaces) > 0 {
@@ -139,12 +140,8 @@ func executeConftestScan(workingDir, command string) (string, error) {
 	return stdout, nil
 }
 
-// RawOutput represents the raw JSON output from conftest
-type RawOutput struct {
-	Warnings  []NamespaceResult `json:"warnings"`
-	Failures  []NamespaceResult `json:"failures"`
-	Successes int               `json:"successes"`
-}
+// RawOutput represents the raw JSON output from conftest (array of namespace results)
+type RawOutput []NamespaceResult
 
 // NamespaceResult represents results for a specific namespace
 type NamespaceResult struct {
@@ -157,12 +154,19 @@ type NamespaceResult struct {
 
 // FailureDetail represents a single failure
 type FailureDetail struct {
-	Message string `json:"msg"`
+	Message  string            `json:"msg"`
+	Metadata map[string]string `json:"metadata,omitempty"`
 }
 
 // WarningDetail represents a single warning
 type WarningDetail struct {
-	Message string `json:"msg"`
+	Message  string            `json:"msg"`
+	Metadata map[string]string `json:"metadata,omitempty"`
+}
+
+// ParseConftestOutput parses conftest JSON output into violations and warnings (exported for testing)
+func ParseConftestOutput(output string) ([]PolicyViolation, []PolicyWarning, error) {
+	return parseConftestOutput(output)
 }
 
 // parseConftestOutput parses conftest JSON output into violations and warnings
@@ -175,31 +179,28 @@ func parseConftestOutput(output string) ([]PolicyViolation, []PolicyWarning, err
 	var violations []PolicyViolation
 	var warnings []PolicyWarning
 
-	// Parse failures as violations
-	for _, failure := range rawOutput.Failures {
-		namespace, rule := parseNamespace(failure.Namespace)
-		for _, detail := range failure.Failures {
+	// Iterate through each namespace result
+	for _, namespaceResult := range rawOutput {
+		// Parse failures as violations
+		for _, detail := range namespaceResult.Failures {
 			violations = append(violations, PolicyViolation{
-				Policy:    rule,
-				Rule:      rule,
+				Policy:    namespaceResult.Namespace,
+				Rule:      extractRuleFromMessage(detail.Message),
 				Message:   detail.Message,
-				Namespace: namespace,
+				Namespace: namespaceResult.Namespace,
 				Severity:  "error",
-				Resource:  "",
+				Resource:  extractResourceFromMessage(detail.Message),
 			})
 		}
-	}
 
-	// Parse warnings
-	for _, warning := range rawOutput.Warnings {
-		namespace, rule := parseNamespace(warning.Namespace)
-		for _, detail := range warning.Warnings {
+		// Parse warnings
+		for _, detail := range namespaceResult.Warnings {
 			warnings = append(warnings, PolicyWarning{
-				Policy:    rule,
-				Rule:      rule,
+				Policy:    namespaceResult.Namespace,
+				Rule:      extractRuleFromMessage(detail.Message),
 				Message:   detail.Message,
-				Namespace: namespace,
-				Resource:  "",
+				Namespace: namespaceResult.Namespace,
+				Resource:  extractResourceFromMessage(detail.Message),
 			})
 		}
 	}
@@ -214,6 +215,38 @@ func parseNamespace(fullNamespace string) (namespace, rule string) {
 		return parts[0], parts[1]
 	}
 	return fullNamespace, fullNamespace
+}
+
+// extractRuleFromMessage extracts the rule name from the policy violation message
+func extractRuleFromMessage(message string) string {
+	// Try to extract rule from the beginning of the message (format: namespace/rule:)
+	parts := strings.SplitN(message, ":", 2)
+	if len(parts) >= 2 {
+		rulePart := strings.TrimSpace(parts[0])
+		// Extract just the rule name after the last slash
+		if slashIndex := strings.LastIndex(rulePart, "/"); slashIndex != -1 {
+			return rulePart[slashIndex+1:]
+		}
+		return rulePart
+	}
+	return "unknown"
+}
+
+// extractResourceFromMessage extracts the resource reference from the policy violation message
+func extractResourceFromMessage(message string) string {
+	// Look for patterns like 'module.disk.azurerm_storage_account.example' or 'azurerm_linux_virtual_machine.example'
+	// These are typically enclosed in single quotes
+	if startQuote := strings.Index(message, "'"); startQuote != -1 {
+		remaining := message[startQuote+1:]
+		if endQuote := strings.Index(remaining, "'"); endQuote != -1 {
+			resource := remaining[:endQuote]
+			// Check if this looks like a Terraform resource reference
+			if strings.Contains(resource, ".") && (strings.Contains(resource, "azurerm_") || strings.Contains(resource, "module.")) {
+				return resource
+			}
+		}
+	}
+	return ""
 }
 
 // createIgnoreConfig creates ignore configuration files for ignored policies
@@ -289,7 +322,7 @@ func resolvePredefinedPolicyLibrary(alias string) ([]string, error) {
 // downloadPolicySource downloads a policy source from a URL and returns a PolicySource
 func downloadPolicySource(url, tempDir string) (*PolicySource, error) {
 	// Create a unique subdirectory for this policy source
-	policyDir, err := afero.TempDir(fs, tempDir, "policy-*")
+	policyDir, err := afero.TempDir(fs, tempDir, fmt.Sprintf("policy-%d", rand.Int63()))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create policy directory: %w", err)
 	}
@@ -443,7 +476,7 @@ func Scan(param ScanParam) (*ScanResult, error) {
 	}
 
 	// Create temporary directory for all conftest operations
-	tempDir, err := afero.TempDir(fs, "", "conftest-scan-*")
+	tempDir, err := afero.TempDir(fs, "", fmt.Sprintf("conftest-scan-%d", rand.Int63()))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create temp directory: %w", err)
 	}
