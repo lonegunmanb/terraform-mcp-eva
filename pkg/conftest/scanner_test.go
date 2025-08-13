@@ -162,7 +162,7 @@ func TestBuildConftestCommand(t *testing.T) {
 			policySources: []PolicySource{
 				{ResolvedPath: "/tmp/policies1"},
 			},
-			expectedCmd: "conftest test --all-namespaces -p /tmp/policies1 /test/plan.json",
+			expectedCmd: "conftest test --no-color -o json --all-namespaces -p /tmp/policies1 /test/plan.json",
 		},
 		{
 			name:     "should build command with multiple policy sources",
@@ -173,6 +173,8 @@ func TestBuildConftestCommand(t *testing.T) {
 			},
 			shouldContain: []string{
 				"conftest test",
+				"--no-color",
+				"-o json",
 				"--all-namespaces",
 				"-p /tmp/policies1",
 				"-p /tmp/policies2",
@@ -188,6 +190,8 @@ func TestBuildConftestCommand(t *testing.T) {
 			namespaces: []string{"main", "security"},
 			shouldContain: []string{
 				"conftest test",
+				"--no-color",
+				"-o json",
 				"--namespace main",
 				"--namespace security",
 				"-p /tmp/policies1",
@@ -307,64 +311,64 @@ func TestParseConftestOutput(t *testing.T) {
 	}{
 		{
 			name: "should parse clean output with no violations",
-			input: `{
-				"warnings": [],
-				"failures": [],
-				"successes": 5
-			}`,
+			input: `[
+				{
+					"filename": "/test/plan.json",
+					"namespace": "main",
+					"successes": 5,
+					"failures": [],
+					"warnings": []
+				}
+			]`,
 			expectedViolations: 0,
 			expectedWarnings:   0,
 			expectError:        false,
 		},
 		{
 			name: "should parse output with violations",
-			input: `{
-				"warnings": [],
-				"failures": [
-					{
-						"filename": "/test/plan.json",
-						"namespace": "main.storage_account_https_only",
-						"successes": 0,
-						"failures": [
-							{
-								"msg": "Storage account should enforce HTTPS"
-							}
-						]
-					},
-					{
-						"filename": "/test/plan.json", 
-						"namespace": "security.vm_backup_enabled",
-						"successes": 0,
-						"failures": [
-							{
-								"msg": "VM should have backup enabled"
-							}
-						]
-					}
-				],
-				"successes": 3
-			}`,
+			input: `[
+				{
+					"filename": "/test/plan.json",
+					"namespace": "main",
+					"successes": 0,
+					"failures": [
+						{
+							"msg": "Storage account should enforce HTTPS"
+						}
+					],
+					"warnings": []
+				},
+				{
+					"filename": "/test/plan.json", 
+					"namespace": "security",
+					"successes": 0,
+					"failures": [
+						{
+							"msg": "VM should have backup enabled"
+						}
+					],
+					"warnings": []
+				}
+			]`,
 			expectedViolations: 2,
 			expectedWarnings:   0,
 			expectError:        false,
 		},
 		{
 			name: "should parse output with warnings",
-			input: `{
-				"warnings": [
-					{
-						"filename": "/test/plan.json",
-						"namespace": "main.storage_account_recommended", 
-						"warnings": [
-							{
-								"msg": "Consider using premium storage"
-							}
-						]
-					}
-				],
-				"failures": [],
-				"successes": 4
-			}`,
+			input: `[
+				{
+					"filename": "/test/plan.json",
+					"namespace": "main",
+					"successes": 4,
+					"failures": [],
+					"warnings": [
+						{
+							"msg": "Consider using premium storage"
+						}
+					]
+				}
+			]`,
 			expectedViolations: 0,
 			expectedWarnings:   1,
 			expectError:        false,
@@ -415,11 +419,15 @@ func TestScan_EndToEnd(t *testing.T) {
 			setupCommands: func(mock *MockCommandExecutor) {
 				mock.patterns = map[string]*MockCommandResult{
 					"conftest test": {
-						stdout: `{
-							"warnings": [],
-							"failures": [],
-							"successes": 5
-						}`,
+						stdout: `[
+							{
+								"filename": "/test/plan.json",
+								"namespace": "main",
+								"successes": 5,
+								"failures": [],
+								"warnings": []
+							}
+						]`,
 						stderr: "",
 						err:    nil,
 					},
@@ -441,22 +449,19 @@ func TestScan_EndToEnd(t *testing.T) {
 			setupCommands: func(mock *MockCommandExecutor) {
 				mock.patterns = map[string]*MockCommandResult{
 					"conftest test": {
-						stdout: `{
-							"warnings": [],
-							"failures": [
-								{
-									"filename": "/test/plan.json",
-									"namespace": "main.storage_account_https_only",
-									"successes": 0,
-									"failures": [
-										{
-											"msg": "Storage account should enforce HTTPS"
-										}
-									]
-								}
-							],
-							"successes": 4
-						}`,
+						stdout: `[
+							{
+								"filename": "/test/plan.json",
+								"namespace": "main",
+								"successes": 0,
+								"failures": [
+									{
+										"msg": "Storage account should enforce HTTPS"
+									}
+								],
+								"warnings": []
+							}
+						]`,
 						stderr: "",
 						err:    nil,
 					},
@@ -493,11 +498,15 @@ func TestScan_EndToEnd(t *testing.T) {
 			setupCommands: func(mock *MockCommandExecutor) {
 				mock.patterns = map[string]*MockCommandResult{
 					"conftest test": {
-						stdout: `{
-							"warnings": [],
-							"failures": [],
-							"successes": 5
-						}`,
+						stdout: `[
+							{
+								"filename": "/test/plan.json",
+								"namespace": "main",
+								"successes": 5,
+								"failures": [],
+								"warnings": []
+							}
+						]`,
 						stderr: "",
 						err:    nil,
 					},
