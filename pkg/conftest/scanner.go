@@ -80,25 +80,25 @@ func (r *RealPolicyDownloader) DownloadPolicy(url, destDir string) error {
 // Global policy downloader for testing (following tflint pattern)
 var policyDownloader PolicyDownloader = &RealPolicyDownloader{}
 
-// validateTargetPlan validates that the plan file exists and is a file
-func validateTargetPlan(planFile string) error {
-	info, err := fs.Stat(planFile)
+// validateTargetFile validates that the target file exists and is a file
+func validateTargetFile(targetFile string) error {
+	info, err := fs.Stat(targetFile)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return fmt.Errorf("plan file does not exist: %s", planFile)
+			return fmt.Errorf("target file does not exist: %s", targetFile)
 		}
-		return fmt.Errorf("failed to stat plan file: %w", err)
+		return fmt.Errorf("failed to stat target file: %w", err)
 	}
 
 	if info.IsDir() {
-		return fmt.Errorf("plan path is not a file: %s", planFile)
+		return fmt.Errorf("target path is not a file: %s", targetFile)
 	}
 
 	return nil
 }
 
 // buildConftestCommand builds the conftest command with policy sources and options
-func buildConftestCommand(planFile string, policySources []PolicySource, namespaces []string) string {
+func buildConftestCommand(targetFile string, policySources []PolicySource, namespaces []string) string {
 	parts := []string{"conftest", "test", "--no-color", "-o", "json"}
 
 	// Add namespace flags
@@ -115,8 +115,8 @@ func buildConftestCommand(planFile string, policySources []PolicySource, namespa
 		parts = append(parts, "-p", source.ResolvedPath)
 	}
 
-	// Add plan file
-	parts = append(parts, planFile)
+	// Add target file
+	parts = append(parts, targetFile)
 
 	return strings.Join(parts, " ")
 }
@@ -470,9 +470,9 @@ func Scan(param ScanParam) (*ScanResult, error) {
 		return nil, fmt.Errorf("parameter validation failed: %w", err)
 	}
 
-	// Validate plan file
-	if err := validateTargetPlan(param.TargetFile); err != nil {
-		return nil, fmt.Errorf("plan file validation failed: %w", err)
+	// Validate target file
+	if err := validateTargetFile(param.TargetFile); err != nil {
+		return nil, fmt.Errorf("target file validation failed: %w", err)
 	}
 
 	// Create temporary directory for all conftest operations
