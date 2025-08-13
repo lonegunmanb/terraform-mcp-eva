@@ -414,7 +414,7 @@ func TestScan_EndToEnd(t *testing.T) {
 			},
 			param: ScanParam{
 				PreDefinedPolicyLibraryAlias: "aprl",
-				PlanFile:                     "/test/plan.json",
+				TargetFile:                   "/test/plan.json",
 			},
 			setupCommands: func(mock *MockCommandExecutor) {
 				mock.patterns = map[string]*MockCommandResult{
@@ -444,7 +444,7 @@ func TestScan_EndToEnd(t *testing.T) {
 			},
 			param: ScanParam{
 				PolicyUrls: []string{"git::https://example.com/policies.git"},
-				PlanFile:   "/test/plan.json",
+				TargetFile: "/test/plan.json",
 			},
 			setupCommands: func(mock *MockCommandExecutor) {
 				mock.patterns = map[string]*MockCommandResult{
@@ -477,7 +477,7 @@ func TestScan_EndToEnd(t *testing.T) {
 			},
 			param: ScanParam{
 				PreDefinedPolicyLibraryAlias: "aprl",
-				PlanFile:                     "/test/nonexistent.json",
+				TargetFile:                   "/test/nonexistent.json",
 			},
 			setupCommands: func(mock *MockCommandExecutor) {},
 			expectError:   true,
@@ -490,7 +490,7 @@ func TestScan_EndToEnd(t *testing.T) {
 			},
 			param: ScanParam{
 				PreDefinedPolicyLibraryAlias: "aprl",
-				PlanFile:                     "/test/plan.json",
+				TargetFile:                   "/test/plan.json",
 				IgnoredPolicies: []IgnoredPolicy{
 					{Namespace: "avmsec", Name: "storage_account_https_only"},
 				},
@@ -569,7 +569,7 @@ deny[msg] {
 				require.NoError(t, err)
 				assert.NotNil(t, result)
 				assert.Len(t, result.Violations, tt.expectedViolationCount)
-				assert.Equal(t, tt.param.PlanFile, result.PlanFile)
+				assert.Equal(t, tt.param.TargetFile, result.TargetFile)
 
 				// For cleanup test, verify no temporary directories remain
 				if tt.name == "should cleanup temporary directories after scan with ignored policies" {
@@ -841,7 +841,7 @@ func TestResolvePolicySources_WithDefaultAVMExceptions(t *testing.T) {
 	// Test parameter with IncludeDefaultAVMExceptions enabled
 	param := ScanParam{
 		PreDefinedPolicyLibraryAlias: "all",
-		PlanFile:                     "plan.json",
+		TargetFile:                   "plan.json",
 		IncludeDefaultAVMExceptions:  true,
 	}
 
@@ -894,7 +894,7 @@ func TestResolvePolicySources_WithoutDefaultAVMExceptions(t *testing.T) {
 	// Test parameter with IncludeDefaultAVMExceptions disabled (default)
 	param := ScanParam{
 		PreDefinedPolicyLibraryAlias: "all",
-		PlanFile:                     "plan.json",
+		TargetFile:                   "plan.json",
 		IncludeDefaultAVMExceptions:  false,
 	}
 

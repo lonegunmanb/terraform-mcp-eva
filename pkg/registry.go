@@ -293,9 +293,9 @@ func RegisterMcpServer(s *mcp.Server) {
 					},
 					Description: "Array of policy URLs in go-getter format (git::https://..., https://..., file://...). Mutually exclusive with 'predefined_policy_library_alias'. Supports git repositories, HTTP/HTTPS URLs, local files, and archives.",
 				},
-				"plan_file": {
+				"target_file": {
 					Type:        "string",
-					Description: "Required path to pre-generated Terraform plan file in JSON format. Use relative paths relative to the current Terraform workspace (e.g., './plan.json' for root, './examples/default/plan.json' for AVM module examples). Generate using: 'terraform plan -out=plan.tfplan && terraform show -json plan.tfplan > plan.json'.",
+					Description: "Required path to target file (Terraform plan file in JSON format or state file). Use relative paths relative to the current Terraform workspace (e.g., './plan.json' for root, './examples/default/plan.json' for AVM module examples). For plan files, generate using: 'terraform plan -out=plan.tfplan && terraform show -json plan.tfplan > plan.json'. For state files, use 'terraform.tfstate' or pull state from backend using: 'terraform state pull'.",
 				},
 				"ignored_policies": {
 					Type: "array",
@@ -327,7 +327,7 @@ func RegisterMcpServer(s *mcp.Server) {
 					Description: "Whether to include default Azure Verified Modules (AVM) exceptions. Defaults to true. Downloads standard AVM policy exceptions when true.",
 				},
 			},
-			Required: []string{"plan_file"},
+			Required: []string{"target_file"},
 		},
 		Description: "Execute Open Policy Agent (OPA) conftest scanning on Terraform plans with policy-as-code. This tool allows AI agents to perform policy testing on Terraform plan files using predefined Azure policy libraries or custom policies. Supports Azure Proactive Resiliency Library (APRL), AVM Security policies, custom policy repositories, and selective policy ignoring. Returns detailed policy violations, warnings, and scan statistics. Use this tool when you need to: 1) Validate Terraform plans against organizational policies, 2) Check compliance with Azure security and resiliency standards, 3) Enforce governance rules on infrastructure deployments, 4) Perform automated policy compliance testing.",
 		Name:        "conftest_scan",
