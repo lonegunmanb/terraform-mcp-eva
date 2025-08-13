@@ -85,15 +85,15 @@ deny[msg] {
 	return afero.WriteFile(fs, destDir+"/test_policy.rego", []byte(policyContent), 0644)
 }
 
-func TestValidateTargetPlan(t *testing.T) {
+func TestValidateTargetFile(t *testing.T) {
 	tests := []struct {
 		name      string
-		setupFs   func(fs afero.Fs) string // returns plan file path
+		setupFs   func(fs afero.Fs) string // returns target file path
 		wantErr   bool
 		errString string
 	}{
 		{
-			name: "should validate existing plan file",
+			name: "should validate existing target file",
 			setupFs: func(fs afero.Fs) string {
 				planFile := "/test/plan.json"
 				require.NoError(t, fs.MkdirAll("/test", 0755))
@@ -103,12 +103,12 @@ func TestValidateTargetPlan(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "should error on non-existent plan file",
+			name: "should error on non-existent target file",
 			setupFs: func(fs afero.Fs) string {
 				return "/test/nonexistent.json"
 			},
 			wantErr:   true,
-			errString: "plan file does not exist",
+			errString: "target file does not exist",
 		},
 		{
 			name: "should error when path is a directory, not file",
@@ -118,7 +118,7 @@ func TestValidateTargetPlan(t *testing.T) {
 				return dir
 			},
 			wantErr:   true,
-			errString: "plan path is not a file",
+			errString: "target path is not a file",
 		},
 	}
 
@@ -132,7 +132,7 @@ func TestValidateTargetPlan(t *testing.T) {
 			planPath := tt.setupFs(fs)
 
 			// Execute
-			err := validateTargetPlan(planPath)
+			err := validateTargetFile(planPath)
 
 			// Assert
 			if tt.wantErr {
@@ -473,7 +473,7 @@ func TestScan_EndToEnd(t *testing.T) {
 		{
 			name: "should handle validation errors",
 			setupFs: func(fs afero.Fs) {
-				// Don't create the plan file
+				// Don't create the target file
 			},
 			param: ScanParam{
 				PreDefinedPolicyLibraryAlias: "aprl",
