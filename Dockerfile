@@ -26,7 +26,7 @@ COPY --from=avm /usr/local/bin/hclmerge /usr/local/bin/hclmerge
 COPY --from=builder /usr/local/bin/tflint /usr/local/bin/tflint
 
 # Install ca-certificates for HTTPS requests
-RUN apk --no-cache add ca-certificates
+RUN apk --no-cache add ca-certificates git
 
 # Create a non-root user
 RUN adduser -D -s /bin/sh appuser

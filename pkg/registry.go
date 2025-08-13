@@ -271,6 +271,68 @@ func RegisterMcpServer(s *mcp.Server) {
 		Name:        "tflint_scan",
 	}, tool.TFLintScan)
 
+	mcp.AddTool(s, &mcp.Tool{
+		Annotations: &mcp.ToolAnnotations{
+			DestructiveHint: p(false),
+			IdempotentHint:  false,
+			OpenWorldHint:   p(false),
+			ReadOnlyHint:    true,
+		},
+		InputSchema: &jsonschema.Schema{
+			Type: "object",
+			Properties: map[string]*jsonschema.Schema{
+				"predefined_policy_library_alias": {
+					Type:        "string",
+					Description: "Predefined policy library alias. Supported: 'aprl' (Azure Proactive Resiliency Library), 'avmsec' (AVM Security policies), or 'all' (both libraries, default). Mutually exclusive with 'policy_urls'.",
+					Enum:        []interface{}{"aprl", "avmsec", "all"},
+				},
+				"policy_urls": {
+					Type: "array",
+					Items: &jsonschema.Schema{
+						Type: "string",
+					},
+					Description: "Array of policy URLs in go-getter format (git::https://..., https://..., file://...). Mutually exclusive with 'predefined_policy_library_alias'. Supports git repositories, HTTP/HTTPS URLs, local files, and archives.",
+				},
+				"plan_file": {
+					Type:        "string",
+					Description: "Required path to pre-generated Terraform plan file in JSON format. Use relative paths relative to the current Terraform workspace (e.g., './plan.json' for root, './examples/default/plan.json' for AVM module examples). Generate using: 'terraform plan -out=plan.tfplan && terraform show -json plan.tfplan > plan.json'.",
+				},
+				"ignored_policies": {
+					Type: "array",
+					Items: &jsonschema.Schema{
+						Type: "object",
+						Properties: map[string]*jsonschema.Schema{
+							"namespace": {
+								Type:        "string",
+								Description: "Required policy namespace (e.g., 'avmsec', 'aprl', 'custom').",
+							},
+							"name": {
+								Type:        "string",
+								Description: "Required policy rule name (e.g., 'storage_account_https_only').",
+							},
+						},
+						Required: []string{"namespace", "name"},
+					},
+					Description: "Array of policies to ignore. Each must specify both 'namespace' and 'name' for precise identification.",
+				},
+				"namespaces": {
+					Type: "array",
+					Items: &jsonschema.Schema{
+						Type: "string",
+					},
+					Description: "Specific policy namespaces to test. If not specified, all namespaces will be tested.",
+				},
+				"include_default_avm_exceptions": {
+					Type:        "boolean",
+					Description: "Whether to include default Azure Verified Modules (AVM) exceptions. Defaults to true. Downloads standard AVM policy exceptions when true.",
+				},
+			},
+			Required: []string{"plan_file"},
+		},
+		Description: "Execute Open Policy Agent (OPA) conftest scanning on Terraform plans with policy-as-code. This tool allows AI agents to perform policy testing on Terraform plan files using predefined Azure policy libraries or custom policies. Supports Azure Proactive Resiliency Library (APRL), AVM Security policies, custom policy repositories, and selective policy ignoring. Returns detailed policy violations, warnings, and scan statistics. Use this tool when you need to: 1) Validate Terraform plans against organizational policies, 2) Check compliance with Azure security and resiliency standards, 3) Enforce governance rules on infrastructure deployments, 4) Perform automated policy compliance testing.",
+		Name:        "conftest_scan",
+	}, tool.ConftestScan)
+
 	prompt.AddSolveAvmIssuePrompt(s)
 }
 
