@@ -295,7 +295,7 @@ func RegisterMcpServer(s *mcp.Server) {
 				},
 				"target_file": {
 					Type:        "string",
-					Description: "Required path to target file (Terraform plan file in JSON format or state file). Use relative paths relative to the current Terraform workspace (e.g., './plan.json' for root, './examples/default/plan.json' for AVM module examples). For plan files, generate using: 'terraform plan -out=plan.tfplan && terraform show -json plan.tfplan > plan.json'. For state files, use 'terraform.tfstate' or pull state from backend using: 'terraform state pull'.",
+					Description: "Required path to target file (Terraform plan file in JSON format or state file). IMPORTANT: Use relative paths in most cases, relative to the current Terraform workspace (e.g., './plan.json' for root workspace, './examples/default/plan.json' for AVM module examples). For plan files, generate using: 'terraform plan -out=plan.tfplan && terraform show -json plan.tfplan > plan.json'. For state files, generate using: 'terraform show -json > tf.json'.",
 				},
 				"ignored_policies": {
 					Type: "array",
