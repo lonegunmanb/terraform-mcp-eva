@@ -8,7 +8,7 @@ import (
 type ScanParam struct {
 	PreDefinedPolicyLibraryAlias string          `json:"predefined_policy_library_alias,omitempty"` // "aprl", "avmsec", "all" - mutually exclusive with PolicyUrls
 	PolicyUrls                   []string        `json:"policy_urls,omitempty"`                     // Array of policy URLs in go-getter format
-	PlanFile                     string          `json:"plan_file"`                                 // Required pre-generated plan file path (JSON format)
+	TargetFile                   string          `json:"target_file"`                               // Required target file path (JSON plan file or state file)
 	IgnoredPolicies              []IgnoredPolicy `json:"ignored_policies,omitempty"`                // Policies to ignore with namespace and name
 	Namespaces                   []string        `json:"namespaces,omitempty"`                      // Specific namespaces to test (default: all)
 	IncludeDefaultAVMExceptions  bool            `json:"include_default_avm_exceptions,omitempty"`  // Whether to download and include default AVM exceptions
@@ -22,8 +22,8 @@ func (p *ScanParam) Validate() error {
 	}
 
 	// Check required fields
-	if p.PlanFile == "" {
-		return fmt.Errorf("plan_file is required")
+	if p.TargetFile == "" {
+		return fmt.Errorf("target_file is required")
 	}
 
 	// Validate predefined alias if provided
@@ -71,7 +71,7 @@ func (p *IgnoredPolicy) Validate() error {
 // ScanResult - Output structure
 type ScanResult struct {
 	Success       bool              `json:"success"`
-	PlanFile      string            `json:"plan_file"`
+	TargetFile    string            `json:"target_file"`
 	PolicySources []PolicySource    `json:"policy_sources"` // Details of resolved policy sources
 	Violations    []PolicyViolation `json:"violations,omitempty"`
 	Warnings      []PolicyWarning   `json:"warnings,omitempty"`

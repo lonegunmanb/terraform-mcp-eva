@@ -471,7 +471,7 @@ func Scan(param ScanParam) (*ScanResult, error) {
 	}
 
 	// Validate plan file
-	if err := validateTargetPlan(param.PlanFile); err != nil {
+	if err := validateTargetPlan(param.TargetFile); err != nil {
 		return nil, fmt.Errorf("plan file validation failed: %w", err)
 	}
 
@@ -489,7 +489,7 @@ func Scan(param ScanParam) (*ScanResult, error) {
 	}
 
 	// Build conftest command
-	command := buildConftestCommand(param.PlanFile, policySources, param.Namespaces)
+	command := buildConftestCommand(param.TargetFile, policySources, param.Namespaces)
 
 	// Execute conftest scan
 	output, err := executeConftestScan("", command)
@@ -506,7 +506,7 @@ func Scan(param ScanParam) (*ScanResult, error) {
 	// Build result
 	result := &ScanResult{
 		Success:       true,
-		PlanFile:      param.PlanFile,
+		TargetFile:    param.TargetFile,
 		PolicySources: policySources,
 		Violations:    violations,
 		Warnings:      warnings,

@@ -20,7 +20,7 @@ func TestScanParam_Validation(t *testing.T) {
 			param: ScanParam{
 				PreDefinedPolicyLibraryAlias: "aprl",
 				PolicyUrls:                   []string{"git::https://example.com/policies.git"},
-				PlanFile:                     "plan.json",
+				TargetFile:                   "plan.json",
 			},
 			wantErr: true,
 			errMsg:  "predefined_policy_library_alias and policy_urls are mutually exclusive",
@@ -29,7 +29,7 @@ func TestScanParam_Validation(t *testing.T) {
 			name: "valid predefined alias only",
 			param: ScanParam{
 				PreDefinedPolicyLibraryAlias: "aprl",
-				PlanFile:                     "plan.json",
+				TargetFile:                   "plan.json",
 			},
 			wantErr: false,
 		},
@@ -37,7 +37,7 @@ func TestScanParam_Validation(t *testing.T) {
 			name: "valid policy urls only",
 			param: ScanParam{
 				PolicyUrls: []string{"git::https://example.com/policies.git"},
-				PlanFile:   "plan.json",
+				TargetFile: "plan.json",
 			},
 			wantErr: false,
 		},
@@ -47,13 +47,13 @@ func TestScanParam_Validation(t *testing.T) {
 				PreDefinedPolicyLibraryAlias: "aprl",
 			},
 			wantErr: true,
-			errMsg:  "plan_file is required",
+			errMsg:  "target_file is required",
 		},
 		{
 			name: "invalid predefined alias",
 			param: ScanParam{
 				PreDefinedPolicyLibraryAlias: "invalid",
-				PlanFile:                     "plan.json",
+				TargetFile:                   "plan.json",
 			},
 			wantErr: true,
 			errMsg:  "invalid predefined_policy_library_alias",
@@ -62,7 +62,7 @@ func TestScanParam_Validation(t *testing.T) {
 			name: "valid ignored policies with namespace and name",
 			param: ScanParam{
 				PreDefinedPolicyLibraryAlias: "aprl",
-				PlanFile:                     "plan.json",
+				TargetFile:                   "plan.json",
 				IgnoredPolicies: []IgnoredPolicy{
 					{Namespace: "avmsec", Name: "storage_account_https_only"},
 					{Namespace: "aprl", Name: "vm_backup_enabled"},
@@ -74,7 +74,7 @@ func TestScanParam_Validation(t *testing.T) {
 			name: "invalid ignored policy - missing namespace",
 			param: ScanParam{
 				PreDefinedPolicyLibraryAlias: "aprl",
-				PlanFile:                     "plan.json",
+				TargetFile:                   "plan.json",
 				IgnoredPolicies: []IgnoredPolicy{
 					{Name: "storage_account_https_only"},
 				},
@@ -86,7 +86,7 @@ func TestScanParam_Validation(t *testing.T) {
 			name: "invalid ignored policy - missing name",
 			param: ScanParam{
 				PreDefinedPolicyLibraryAlias: "aprl",
-				PlanFile:                     "plan.json",
+				TargetFile:                   "plan.json",
 				IgnoredPolicies: []IgnoredPolicy{
 					{Namespace: "avmsec"},
 				},
@@ -159,8 +159,8 @@ func TestIgnoredPolicy_Validation(t *testing.T) {
 
 func TestScanResult_JSONSerialization(t *testing.T) {
 	result := ScanResult{
-		Success:  true,
-		PlanFile: "plan.json",
+		Success:    true,
+		TargetFile: "plan.json",
 		PolicySources: []PolicySource{
 			{OriginalURL: "git::https://example.com/policies.git", PolicyCount: 5},
 		},
@@ -195,7 +195,7 @@ func TestScanResult_JSONSerialization(t *testing.T) {
 
 	// Verify key fields
 	assert.Equal(t, result.Success, unmarshaled.Success)
-	assert.Equal(t, result.PlanFile, unmarshaled.PlanFile)
+	assert.Equal(t, result.TargetFile, unmarshaled.TargetFile)
 	assert.Len(t, unmarshaled.PolicySources, len(result.PolicySources))
 	assert.Len(t, unmarshaled.Violations, len(result.Violations))
 }
