@@ -5,7 +5,7 @@ go 1.24
 require (
 	github.com/google/go-github/v74 v74.0.0
 	github.com/hashicorp/go-getter/v2 v2.2.3
-	github.com/hashicorp/terraform-json v0.25.0
+	github.com/hashicorp/terraform-json v0.26.0
 	github.com/lonegunmanb/hclmerge v0.0.0-20250729004239-c2ef69683bf3
 	github.com/lonegunmanb/newres/v3 v3.0.0-20250716024827-64a0d3c6604c
 	github.com/lonegunmanb/terraform-aws-schema/v6 v6.8.0
