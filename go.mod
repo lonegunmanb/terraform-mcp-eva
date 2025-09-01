@@ -8,7 +8,7 @@ require (
 	github.com/hashicorp/terraform-json v0.25.0
 	github.com/lonegunmanb/hclmerge v0.0.0-20250729004239-c2ef69683bf3
 	github.com/lonegunmanb/newres/v3 v3.0.0-20250716024827-64a0d3c6604c
-	github.com/lonegunmanb/terraform-aws-schema/v6 v6.8.0
+	github.com/lonegunmanb/terraform-aws-schema/v6 v6.11.0
 	github.com/lonegunmanb/terraform-awscc-schema v1.51.0
 	github.com/lonegunmanb/terraform-azapi-schema/v2 v2.5.0
 	github.com/lonegunmanb/terraform-azuread-schema/v3 v3.5.0

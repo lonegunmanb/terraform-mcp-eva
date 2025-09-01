@@ -39,8 +39,8 @@ github.com/lonegunmanb/hclmerge v0.0.0-20250729004239-c2ef69683bf3 h1:+/jGtd4ieU
 github.com/lonegunmanb/hclmerge v0.0.0-20250729004239-c2ef69683bf3/go.mod h1:eRsXwAExxRA61w7UJ94xWCoFhvjbwER92msMCcCeDDw=
 github.com/lonegunmanb/newres/v3 v3.0.0-20250716024827-64a0d3c6604c h1:kyD6/zHVazbYd5ZECe9LwVzJY0tbv3HOs8YAp7vrggk=
 github.com/lonegunmanb/newres/v3 v3.0.0-20250716024827-64a0d3c6604c/go.mod h1:QuKFefBBbtNxo5hxbO6JKsJB3hVgDvF+/OeGapvhtoo=
-github.com/lonegunmanb/terraform-aws-schema/v6 v6.8.0 h1:lUmU3S/7qKTvA4rmT826UrQ1y3uWhip3GEUZBw1g/vg=
-github.com/lonegunmanb/terraform-aws-schema/v6 v6.8.0/go.mod h1:PzejNn3seOfagL7ltKESgqmBF7dry/OstCxxdxIHdEc=
+github.com/lonegunmanb/terraform-aws-schema/v6 v6.11.0 h1:S69t+FldLHx6qEOgwaKOmZvpZj7FWC24cy+shwbjK/c=
+github.com/lonegunmanb/terraform-aws-schema/v6 v6.11.0/go.mod h1:PzejNn3seOfagL7ltKESgqmBF7dry/OstCxxdxIHdEc=
 github.com/lonegunmanb/terraform-awscc-schema v1.51.0 h1:nK3DSuNknpmu0LMS06FM5syzBa4h25Wgl+pTHLp3VBU=
 github.com/lonegunmanb/terraform-awscc-schema v1.51.0/go.mod h1:qtPFv1JcZ+QKFTqg0Gwtch3ifVnvvjgh10GkllmdxRs=
 github.com/lonegunmanb/terraform-azapi-schema/v2 v2.5.0 h1:KyCF1IB/8WoBh7HWPp6Osq9gMpknL9Of4ESsUwaHwyw=
