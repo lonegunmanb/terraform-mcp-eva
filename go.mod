@@ -12,7 +12,7 @@ require (
 	github.com/lonegunmanb/terraform-awscc-schema v1.51.0
 	github.com/lonegunmanb/terraform-azapi-schema/v2 v2.5.0
 	github.com/lonegunmanb/terraform-azuread-schema/v3 v3.5.0
-	github.com/lonegunmanb/terraform-azurerm-schema/v4 v4.39.0
+	github.com/lonegunmanb/terraform-azurerm-schema/v4 v4.42.0
 	github.com/lonegunmanb/terraform-google-schema/v6 v6.48.0
 	github.com/modelcontextprotocol/go-sdk v0.2.0
 	github.com/ms-henglu/go-azure-types v0.0.0-20250710084755-17c1d17a45e4
