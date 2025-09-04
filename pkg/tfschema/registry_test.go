@@ -9,9 +9,23 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// Common provider request for testing - using azurerm as an example
+var testProviderReq = ProviderRequest{
+	ProviderNamespace: "hashicorp",
+	ProviderName:      "azurerm",
+	ProviderVersion:   "4.39.0",
+}
+
+// Provider request without version for testing latest version resolution
+var testProviderReqLatest = ProviderRequest{
+	ProviderNamespace: "hashicorp",
+	ProviderName:      "azurerm",
+	ProviderVersion:   "", // Empty version should resolve to latest
+}
+
 func TestQuerySchema_AzurermResourceGroup_EmptyPath(t *testing.T) {
 	// Test querying azurerm_resource_group resource with empty path
-	result, err := QuerySchema("resource", "azurerm_resource_group", "")
+	result, err := QuerySchema("resource", "azurerm_resource_group", "", testProviderReq)
 
 	require.NoError(t, err, "QuerySchema should not return an error")
 	require.NotEmpty(t, result, "QuerySchema should not return empty result")
@@ -34,7 +48,7 @@ func TestQuerySchema_AzurermResourceGroup_EmptyPath(t *testing.T) {
 // Test cases for path parameter using azurerm_kubernetes_cluster
 func TestQuerySchema_AzurermKubernetesCluster_RootLevelAttribute(t *testing.T) {
 	// Test querying a root-level attribute
-	result, err := QuerySchema("resource", "azurerm_kubernetes_cluster", "name")
+	result, err := QuerySchema("resource", "azurerm_kubernetes_cluster", "name", testProviderReq)
 
 	require.NoError(t, err, "QuerySchema should not return an error for root-level attribute")
 	require.NotEmpty(t, result, "QuerySchema should not return empty result")
@@ -50,7 +64,7 @@ func TestQuerySchema_AzurermKubernetesCluster_RootLevelAttribute(t *testing.T) {
 
 func TestQuerySchema_AzurermKubernetesCluster_NestedBlock(t *testing.T) {
 	// Test querying a nested block (default_node_pool)
-	result, err := QuerySchema("resource", "azurerm_kubernetes_cluster", "default_node_pool")
+	result, err := QuerySchema("resource", "azurerm_kubernetes_cluster", "default_node_pool", testProviderReq)
 
 	require.NoError(t, err, "QuerySchema should not return an error for nested block")
 	require.NotEmpty(t, result, "QuerySchema should not return empty result")
@@ -72,7 +86,7 @@ func TestQuerySchema_AzurermKubernetesCluster_NestedBlock(t *testing.T) {
 
 func TestQuerySchema_AzurermKubernetesCluster_DeepNestedPath(t *testing.T) {
 	// Test querying a deep nested path (default_node_pool.upgrade_settings)
-	result, err := QuerySchema("resource", "azurerm_kubernetes_cluster", "default_node_pool.upgrade_settings")
+	result, err := QuerySchema("resource", "azurerm_kubernetes_cluster", "default_node_pool.upgrade_settings", testProviderReq)
 
 	require.NoError(t, err, "QuerySchema should not return an error for deep nested path")
 	require.NotEmpty(t, result, "QuerySchema should not return empty result")
@@ -93,7 +107,7 @@ func TestQuerySchema_AzurermKubernetesCluster_DeepNestedPath(t *testing.T) {
 
 func TestQuerySchema_AzurermKubernetesCluster_AttributeInNestedBlock(t *testing.T) {
 	// Test querying a specific attribute within a nested block
-	result, err := QuerySchema("resource", "azurerm_kubernetes_cluster", "default_node_pool.name")
+	result, err := QuerySchema("resource", "azurerm_kubernetes_cluster", "default_node_pool.name", testProviderReq)
 
 	require.NoError(t, err, "QuerySchema should not return an error for attribute in nested block")
 	require.NotEmpty(t, result, "QuerySchema should not return empty result")
@@ -109,7 +123,7 @@ func TestQuerySchema_AzurermKubernetesCluster_AttributeInNestedBlock(t *testing.
 
 func TestQuerySchema_AzurermKubernetesCluster_ComplexNestedBlock(t *testing.T) {
 	// Test querying the identity block which is commonly used
-	result, err := QuerySchema("resource", "azurerm_kubernetes_cluster", "identity")
+	result, err := QuerySchema("resource", "azurerm_kubernetes_cluster", "identity", testProviderReq)
 
 	require.NoError(t, err, "QuerySchema should not return an error for identity block")
 	require.NotEmpty(t, result, "QuerySchema should not return empty result")
@@ -127,25 +141,25 @@ func TestQuerySchema_AzurermKubernetesCluster_ComplexNestedBlock(t *testing.T) {
 
 func TestQuerySchema_InvalidCategory(t *testing.T) {
 	// Test with invalid category
-	_, err := QuerySchema("invalid", "azurerm_resource_group", "")
+	_, err := QuerySchema("invalid", "azurerm_resource_group", "", testProviderReq)
 
 	require.Error(t, err, "Should return error for invalid category")
 
-	expectedError := "unknown schema category, must be one of 'resource', 'data_source', or 'ephemeral'"
+	expectedError := "unknown schema category, must be one of 'resource', 'data_source', 'ephemeral', or 'function'"
 	assert.Equal(t, expectedError, err.Error(), "Error message should match expected")
 }
 
 func TestQuerySchema_NonExistentResource(t *testing.T) {
 	// Test with non-existent resource
-	_, err := QuerySchema("resource", "non_existent_resource", "")
+	_, err := QuerySchema("resource", "non_existent_resource", "", testProviderReq)
 
 	require.Error(t, err, "Should return error for non-existent resource")
-	assert.Contains(t, err.Error(), "not found", "Error message should contain 'not found'")
+	assert.Contains(t, err.Error(), "failed to get resource schema", "Error message should contain appropriate error")
 }
 
 func TestQuerySchema_DataSource(t *testing.T) {
 	// Test querying a data source
-	result, err := QuerySchema("data_source", "azurerm_resource_group", "")
+	result, err := QuerySchema("data_source", "azurerm_resource_group", "", testProviderReq)
 
 	require.NoError(t, err, "QuerySchema should not return an error for data source")
 	require.NotEmpty(t, result, "QuerySchema should not return empty result for data source")
@@ -154,4 +168,70 @@ func TestQuerySchema_DataSource(t *testing.T) {
 	var schema tfjson.Schema
 	err = json.Unmarshal([]byte(result), &schema)
 	require.NoError(t, err, "Data source result should be valid JSON")
+}
+
+func TestQuerySchema_LatestVersion(t *testing.T) {
+	// Test querying with empty version (should resolve to latest)
+	result, err := QuerySchema("resource", "azurerm_resource_group", "", testProviderReqLatest)
+
+	require.NoError(t, err, "QuerySchema should not return an error when resolving latest version")
+	require.NotEmpty(t, result, "QuerySchema should not return empty result for latest version")
+
+	// Verify the result is valid JSON
+	var schema tfjson.Schema
+	err = json.Unmarshal([]byte(result), &schema)
+	require.NoError(t, err, "Latest version result should be valid JSON")
+
+	// Verify it's a proper schema structure
+	require.NotNil(t, schema.Block, "Schema block should not be nil")
+
+	// Check for expected attributes in azurerm_resource_group
+	expectedAttributes := []string{"name", "location"}
+	for _, attr := range expectedAttributes {
+		assert.Contains(t, schema.Block.Attributes, attr, "Expected attribute %s should be found in schema", attr)
+	}
+}
+
+func TestQuerySchema_FunctionSupport(t *testing.T) {
+	// Test querying a function schema from Azure azapi provider
+	azapiProviderReq := ProviderRequest{
+		ProviderNamespace: "Azure",
+		ProviderName:      "azapi",
+		ProviderVersion:   "2.6.1",
+	}
+
+	result, err := QuerySchema("function", "build_resource_id", "", azapiProviderReq)
+
+	require.NoError(t, err, "QuerySchema should not return an error for function")
+	require.NotEmpty(t, result, "QuerySchema should not return empty result")
+
+	// Verify the result is valid JSON representing a function signature
+	var functionSig tfjson.FunctionSignature
+	err = json.Unmarshal([]byte(result), &functionSig)
+	require.NoError(t, err, "Result should be valid JSON for function signature")
+
+	// Verify the function signature structure
+	assert.Equal(t, "string", functionSig.ReturnType.FriendlyName(), "Function should return string")
+	assert.Equal(t, 3, len(functionSig.Parameters), "Function should have 3 parameters")
+
+	// Verify parameter names and types
+	expectedParams := []string{"parent_id", "resource_type", "name"}
+	for i, expectedParam := range expectedParams {
+		assert.Equal(t, expectedParam, functionSig.Parameters[i].Name, "Parameter %d should be named %s", i, expectedParam)
+		assert.Equal(t, "string", functionSig.Parameters[i].Type.FriendlyName(), "Parameter %s should be string type", expectedParam)
+	}
+}
+
+func TestQuerySchema_Function_PathNotSupported(t *testing.T) {
+	// Test that path queries are not supported for functions
+	azapiProviderReq := ProviderRequest{
+		ProviderNamespace: "Azure",
+		ProviderName:      "azapi",
+		ProviderVersion:   "2.6.1",
+	}
+
+	_, err := QuerySchema("function", "build_resource_id", "some.path", azapiProviderReq)
+
+	require.Error(t, err, "Should return error for function with path")
+	assert.Equal(t, "path queries are not supported for function schemas", err.Error(), "Error message should match expected")
 }
