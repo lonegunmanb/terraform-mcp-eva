@@ -5,38 +5,74 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	tfjson "github.com/hashicorp/terraform-json"
-	aws_v6 "github.com/lonegunmanb/terraform-aws-schema/v6/generated"
-	awscc "github.com/lonegunmanb/terraform-awscc-schema/generated"
-	azuread_v3 "github.com/lonegunmanb/terraform-azuread-schema/v3/generated"
-	azurerm_v4 "github.com/lonegunmanb/terraform-azurerm-schema/v4/generated"
-	google_v6 "github.com/lonegunmanb/terraform-google-schema/v6/generated"
+	"net/http"
 	"strings"
 	"sync"
+
+	tfjson "github.com/hashicorp/terraform-json"
+	"github.com/matt-FFFFFF/tfpluginschema"
 )
 
-var resourceSchemas = make(map[string]*tfjson.Schema)
-var dataSourceSchemas = make(map[string]*tfjson.Schema)
-var ephemerals = make(map[string]*tfjson.Schema)
-var ensureSchemas = sync.OnceFunc(initSchema)
+var serverInstance *tfpluginschema.Server
+var serverOnce sync.Once
 
-func QuerySchema(category, name, path string) (string, error) {
-	ensureSchemas()
-	var schemas map[string]*tfjson.Schema
+// ProviderRequest represents a request for a specific provider
+type ProviderRequest struct {
+	ProviderNamespace string `json:"namespace"`
+	ProviderName      string `json:"name"`
+	ProviderVersion   string `json:"version"`
+}
+
+func getServer() *tfpluginschema.Server {
+	serverOnce.Do(func() {
+		serverInstance = tfpluginschema.NewServer(nil)
+	})
+	return serverInstance
+}
+
+func QuerySchema(category, name, path string, providerReq ProviderRequest) (string, error) {
+	server := getServer()
+
+	// Resolve version to latest if empty
+	version, err := versionOrLatest(providerReq.ProviderNamespace, providerReq.ProviderName, providerReq.ProviderVersion)
+	if err != nil {
+		return "", fmt.Errorf("failed to resolve provider version: %w", err)
+	}
+
+	request := tfpluginschema.Request{
+		Namespace: providerReq.ProviderNamespace,
+		Name:      providerReq.ProviderName,
+		Version:   version,
+	}
+
+	var schema *tfjson.Schema
+	var functionSignature *tfjson.FunctionSignature
+
 	switch category {
 	case "resource":
-		schemas = resourceSchemas
+		schema, err = server.GetResourceSchema(request, name)
 	case "data_source":
-		schemas = dataSourceSchemas
+		schema, err = server.GetDataSourceSchema(request, name)
 	case "ephemeral":
-		schemas = ephemerals
+		schema, err = server.GetEphemeralResourceSchema(request, name)
+	case "function":
+		functionSignature, err = server.GetFunctionSchema(request, name)
 	default:
-		return "", errors.New("unknown schema category, must be one of 'resource', 'data_source', or 'ephemeral'")
+		return "", errors.New("unknown schema category, must be one of 'resource', 'data_source', 'ephemeral', or 'function'")
 	}
-	schema, ok := schemas[name]
-	if !ok {
-		return "", fmt.Errorf("schema %s %s not found", category, name)
+
+	if err != nil {
+		return "", fmt.Errorf("failed to get %s schema for %s: %w", category, name, err)
 	}
+
+	// Handle function signatures differently from schemas
+	if category == "function" {
+		if path != "" {
+			return "", errors.New("path queries are not supported for function schemas")
+		}
+		return toCompactJson(functionSignature)
+	}
+
 	if path == "" {
 		return toCompactJson(schema)
 	}
@@ -80,45 +116,6 @@ func querySchemaPath(block *tfjson.SchemaBlock, path string) (interface{}, error
 	return nil, fmt.Errorf("path segment '%s' not found in schema block", segment)
 }
 
-func initSchema() {
-	if len(resourceSchemas) == 0 {
-		resources := []map[string]*tfjson.Schema{
-			awscc.Resources,
-			aws_v6.Resources,
-			azurerm_v4.Resources,
-			google_v6.Resources,
-			azuread_v3.Resources,
-		}
-		for _, schemas := range resources {
-			mergeSchemas(resourceSchemas, schemas)
-		}
-		dataSources := []map[string]*tfjson.Schema{
-			awscc.DataSources,
-			aws_v6.DataSources,
-			azurerm_v4.DataSources,
-			google_v6.DataSources,
-			azuread_v3.DataSources,
-		}
-		for _, ds := range dataSources {
-			mergeSchemas(dataSourceSchemas, ds)
-		}
-		ephemeralResources := []map[string]*tfjson.Schema{
-			azurerm_v4.EphemeralResources,
-			aws_v6.EphemeralResources,
-			google_v6.EphemeralResources,
-		}
-		for _, e := range ephemeralResources {
-			mergeSchemas(ephemerals, e)
-		}
-	}
-}
-
-func mergeSchemas(s1, s2 map[string]*tfjson.Schema) {
-	for k, v := range s2 {
-		s1[k] = v
-	}
-}
-
 func toCompactJson(data interface{}) (string, error) {
 	marshal, err := json.Marshal(data)
 	if err != nil {
@@ -129,4 +126,52 @@ func toCompactJson(data interface{}) (string, error) {
 		return "", fmt.Errorf("failed to compact data: %+v", err)
 	}
 	return dst.String(), nil
+}
+
+// CleanupServer cleans up the tfpluginschema server instance
+func CleanupServer() {
+	if serverInstance != nil {
+		serverInstance.Cleanup()
+	}
+}
+
+func versionOrLatest(namespace, providerType, version string) (string, error) {
+	if version == "" {
+		v, err := getLatestVersion(namespace, providerType)
+		if err != nil {
+			return "", err
+		}
+		version = v
+	}
+	return strings.TrimPrefix(version, "v"), nil
+}
+
+func getLatestVersion(namespace string, providerType string) (string, error) {
+	url := fmt.Sprintf("https://registry.terraform.io/v1/providers/%s/%s", namespace, providerType)
+
+	resp, err := http.Get(url) // #nosec G107
+	if err != nil {
+		return "", fmt.Errorf("failed to fetch provider info from registry: %w", err)
+	}
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("registry API returned status %d for provider %s/%s", resp.StatusCode, namespace, providerType)
+	}
+
+	var providerInfo struct {
+		Tag string `json:"tag"`
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(&providerInfo); err != nil {
+		return "", fmt.Errorf("failed to decode provider info response: %w", err)
+	}
+
+	if providerInfo.Tag == "" {
+		return "", fmt.Errorf("no tag found in provider info for %s/%s", namespace, providerType)
+	}
+
+	return providerInfo.Tag, nil
 }
