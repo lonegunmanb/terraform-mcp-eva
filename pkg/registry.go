@@ -214,23 +214,69 @@ func RegisterMcpServer(s *mcp.Server) {
 			Properties: map[string]*jsonschema.Schema{
 				"category": {
 					Type:        "string",
-					Description: "Terraform block type, possible values: resource, data, ephemeral",
-					Enum:        []interface{}{"resource", "data", "ephemeral"},
+					Description: "Terraform block type, possible values: resource, data, ephemeral, function",
+					Enum:        []interface{}{"resource", "data", "ephemeral", "function"},
 				},
 				"type": {
 					Type:        "string",
-					Description: "Terraform block type like: azurerm_resource_group",
+					Description: "Terraform block type like: azurerm_resource_group or function name like: can",
 				},
 				"path": {
 					Type:        "string",
-					Description: "JSON path to query the resource schema, for example: default_node_pool.upgrade_settings, if not specified, the whole resource schema will be returned",
+					Description: "JSON path to query the resource schema, for example: default_node_pool.upgrade_settings, if not specified, the whole resource schema will be returned. Note: path queries are not supported for function schemas",
+				},
+				"version": {
+					Type:        "string",
+					Description: "Provider version (e.g., '5.0.0', '4.39.0'). If not specified, the latest version will be used.",
+				},
+				"namespace": {
+					Type:        "string",
+					Description: "Provider namespace (e.g., 'hashicorp', 'Azure'). If not set, defaults to 'hashicorp'.",
+				},
+				"name": {
+					Type:        "string",
+					Description: "Provider name (e.g., 'aws', 'azurerm', 'azapi'). If not provided, will be inferred from the type parameter (except for functions).",
 				},
 			},
 			Required: []string{"category", "type"},
 		},
-		Description: "[You should use this tool before you try resolveProviderDocID]Query fine grained Terraform resource schema by `category`, `name` and optional `path`. The returned value is a json string representing the resource schema, including attribute descriptions, which can be used in Terraform provider schema. If you're querying schema information about specified attribute or nested block schema of a resource from supported provider, this tool should have higher priority. Only support `azurerm`, `azuread`, `aws`, `awscc`, `google` providers now.",
-		Name:        "query_terraform_fine_grained_document",
-	}, tool.QueryFineGrainedSchema)
+		Description: "[You should use this tool before you try resolveProviderDocID]Query fine grained Terraform resource schema by `category`, `name` and optional `path`. The returned value is a json string representing the resource schema, including attribute descriptions, which can be used in Terraform provider schema. If you're querying schema information about specified attribute or nested block schema of a resource from any provider, this tool should have higher priority. Supports all providers available in the Terraform Registry through dynamic schema loading.",
+		Name:        "query_terraform_schema",
+	}, tool.QuerySchema)
+
+	mcp.AddTool(s, &mcp.Tool{
+		Annotations: &mcp.ToolAnnotations{
+			DestructiveHint: p(false),
+			IdempotentHint:  true,
+			OpenWorldHint:   p(false),
+			ReadOnlyHint:    true,
+		},
+		InputSchema: &jsonschema.Schema{
+			Type: "object",
+			Properties: map[string]*jsonschema.Schema{
+				"category": {
+					Type:        "string",
+					Description: "Terraform item type to list, possible values: resource, data, ephemeral, function",
+					Enum:        []interface{}{"resource", "data", "ephemeral", "function"},
+				},
+				"namespace": {
+					Type:        "string",
+					Description: "Provider namespace (e.g., 'hashicorp', 'Azure'). If not set, defaults to 'hashicorp'.",
+				},
+				"name": {
+					Type:        "string",
+					Description: "Provider name (e.g., 'aws', 'azurerm', 'azapi'). Required parameter.",
+				},
+				"version": {
+					Type:        "string",
+					Description: "Provider version (e.g., '5.0.0', '4.39.0'). If not specified, the latest version will be used.",
+				},
+			},
+			Required: []string{"category", "name"},
+		},
+		Description: "List all available items (resources, data sources, ephemeral resources, or functions) for a specific Terraform provider. This tool enables discovery of all capabilities provided by any Terraform provider in the registry. Use this tool when you need to: 1) Discover what resources/data sources/functions are available in a provider, 2) Find all resources that match a specific pattern or keyword, 3) Understand the full scope of a provider's capabilities, 4) Validate if a specific resource type exists before querying its schema. Supports all providers available in the Terraform Registry through dynamic loading.",
+		Name:        "list_terraform_provider_items",
+	}, tool.ListProviderItems)
 
 	mcp.AddTool(s, &mcp.Tool{
 		Annotations: &mcp.ToolAnnotations{
