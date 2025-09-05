@@ -51,14 +51,14 @@ func QuerySchema(category, name, path string, providerReq ProviderRequest) (stri
 	switch category {
 	case "resource":
 		schema, err = server.GetResourceSchema(request, name)
-	case "data_source":
+	case "data":
 		schema, err = server.GetDataSourceSchema(request, name)
 	case "ephemeral":
 		schema, err = server.GetEphemeralResourceSchema(request, name)
 	case "function":
 		functionSignature, err = server.GetFunctionSchema(request, name)
 	default:
-		return "", errors.New("unknown schema category, must be one of 'resource', 'data_source', 'ephemeral', or 'function'")
+		return "", errors.New("unknown schema category, must be one of 'resource', 'data', 'ephemeral', or 'function'")
 	}
 
 	if err != nil {
@@ -83,6 +83,44 @@ func QuerySchema(category, name, path string, providerReq ProviderRequest) (stri
 		return "", fmt.Errorf("failed to query path %s in schema %s: %w", path, name, err)
 	}
 	return toCompactJson(result)
+}
+
+// ListItems lists available items (resources, data sources, ephemeral resources, or functions) for a provider
+func ListItems(category string, providerReq ProviderRequest) ([]string, error) {
+	server := getServer()
+
+	// Resolve version to latest if empty
+	version, err := versionOrLatest(providerReq.ProviderNamespace, providerReq.ProviderName, providerReq.ProviderVersion)
+	if err != nil {
+		return nil, fmt.Errorf("failed to resolve provider version: %w", err)
+	}
+
+	request := tfpluginschema.Request{
+		Namespace: providerReq.ProviderNamespace,
+		Name:      providerReq.ProviderName,
+		Version:   version,
+	}
+
+	var items []string
+
+	switch category {
+	case "resource":
+		items, err = server.ListResources(request)
+	case "data":
+		items, err = server.ListDataSources(request)
+	case "ephemeral":
+		items, err = server.ListEphemeralResources(request)
+	case "function":
+		items, err = server.ListFunctions(request)
+	default:
+		return nil, errors.New("unknown category, must be one of 'resource', 'data', 'ephemeral', or 'function'")
+	}
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to list %s items for provider %s/%s: %w", category, providerReq.ProviderNamespace, providerReq.ProviderName, err)
+	}
+
+	return items, nil
 }
 
 // querySchemaPath traverses a schema block following the given dot-separated path
@@ -146,7 +184,7 @@ func versionOrLatest(namespace, providerType, version string) (string, error) {
 	return strings.TrimPrefix(version, "v"), nil
 }
 
-func getLatestVersion(namespace string, providerType string) (string, error) {
+var getLatestVersion = func(namespace string, providerType string) (string, error) {
 	url := fmt.Sprintf("https://registry.terraform.io/v1/providers/%s/%s", namespace, providerType)
 
 	resp, err := http.Get(url) // #nosec G107

@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	tfjson "github.com/hashicorp/terraform-json"
+	"github.com/prashantv/gostub"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -14,13 +15,6 @@ var testProviderReq = ProviderRequest{
 	ProviderNamespace: "hashicorp",
 	ProviderName:      "azurerm",
 	ProviderVersion:   "4.39.0",
-}
-
-// Provider request without version for testing latest version resolution
-var testProviderReqLatest = ProviderRequest{
-	ProviderNamespace: "hashicorp",
-	ProviderName:      "azurerm",
-	ProviderVersion:   "", // Empty version should resolve to latest
 }
 
 func TestQuerySchema_AzurermResourceGroup_EmptyPath(t *testing.T) {
@@ -145,7 +139,7 @@ func TestQuerySchema_InvalidCategory(t *testing.T) {
 
 	require.Error(t, err, "Should return error for invalid category")
 
-	expectedError := "unknown schema category, must be one of 'resource', 'data_source', 'ephemeral', or 'function'"
+	expectedError := "unknown schema category, must be one of 'resource', 'data', 'ephemeral', or 'function'"
 	assert.Equal(t, expectedError, err.Error(), "Error message should match expected")
 }
 
@@ -159,7 +153,7 @@ func TestQuerySchema_NonExistentResource(t *testing.T) {
 
 func TestQuerySchema_DataSource(t *testing.T) {
 	// Test querying a data source
-	result, err := QuerySchema("data_source", "azurerm_resource_group", "", testProviderReq)
+	result, err := QuerySchema("data", "azurerm_resource_group", "", testProviderReq)
 
 	require.NoError(t, err, "QuerySchema should not return an error for data source")
 	require.NotEmpty(t, result, "QuerySchema should not return empty result for data source")
@@ -168,28 +162,6 @@ func TestQuerySchema_DataSource(t *testing.T) {
 	var schema tfjson.Schema
 	err = json.Unmarshal([]byte(result), &schema)
 	require.NoError(t, err, "Data source result should be valid JSON")
-}
-
-func TestQuerySchema_LatestVersion(t *testing.T) {
-	// Test querying with empty version (should resolve to latest)
-	result, err := QuerySchema("resource", "azurerm_resource_group", "", testProviderReqLatest)
-
-	require.NoError(t, err, "QuerySchema should not return an error when resolving latest version")
-	require.NotEmpty(t, result, "QuerySchema should not return empty result for latest version")
-
-	// Verify the result is valid JSON
-	var schema tfjson.Schema
-	err = json.Unmarshal([]byte(result), &schema)
-	require.NoError(t, err, "Latest version result should be valid JSON")
-
-	// Verify it's a proper schema structure
-	require.NotNil(t, schema.Block, "Schema block should not be nil")
-
-	// Check for expected attributes in azurerm_resource_group
-	expectedAttributes := []string{"name", "location"}
-	for _, attr := range expectedAttributes {
-		assert.Contains(t, schema.Block.Attributes, attr, "Expected attribute %s should be found in schema", attr)
-	}
 }
 
 func TestQuerySchema_FunctionSupport(t *testing.T) {
@@ -234,4 +206,143 @@ func TestQuerySchema_Function_PathNotSupported(t *testing.T) {
 
 	require.Error(t, err, "Should return error for function with path")
 	assert.Equal(t, "path queries are not supported for function schemas", err.Error(), "Error message should match expected")
+}
+
+// Tests for ListItems function
+func TestListItems_Resources(t *testing.T) {
+	// Test listing resources for azurerm provider
+	items, err := ListItems("resource", testProviderReq)
+
+	require.NoError(t, err, "ListItems should not return an error")
+	require.NotEmpty(t, items, "ListItems should return at least one resource")
+
+	// Check that common azurerm resources are in the list
+	expectedResources := []string{"azurerm_resource_group", "azurerm_virtual_network", "azurerm_storage_account"}
+	for _, expected := range expectedResources {
+		assert.Contains(t, items, expected, "Expected resource %s should be in the list", expected)
+	}
+}
+
+func TestListItems_DataSources(t *testing.T) {
+	// Test listing data sources for azurerm provider
+	items, err := ListItems("data", testProviderReq)
+
+	require.NoError(t, err, "ListItems should not return an error")
+	require.NotEmpty(t, items, "ListItems should return at least one data source")
+
+	// Check that common azurerm data sources are in the list
+	expectedDataSources := []string{"azurerm_resource_group", "azurerm_client_config", "azurerm_subscription"}
+	for _, expected := range expectedDataSources {
+		assert.Contains(t, items, expected, "Expected data source %s should be in the list", expected)
+	}
+}
+
+func TestListItems_Functions(t *testing.T) {
+	// Test listing functions for azapi provider (known to have functions)
+	azapiProviderReq := ProviderRequest{
+		ProviderNamespace: "Azure",
+		ProviderName:      "azapi",
+		ProviderVersion:   "2.6.1",
+	}
+
+	items, err := ListItems("function", azapiProviderReq)
+
+	require.NoError(t, err, "ListItems should not return an error")
+	require.NotEmpty(t, items, "ListItems should return at least one function")
+
+	// Check that known azapi functions are in the list
+	expectedFunctions := []string{"build_resource_id"}
+	for _, expected := range expectedFunctions {
+		assert.Contains(t, items, expected, "Expected function %s should be in the list", expected)
+	}
+}
+
+func TestListItems_Ephemeral(t *testing.T) {
+	// Test listing ephemeral resources for azurerm provider
+	items, err := ListItems("ephemeral", testProviderReq)
+
+	require.NoError(t, err, "ListItems should not return an error")
+	// Note: ephemeral resources might be empty for some providers, so we don't require items
+	// but we should verify the result is a valid slice
+	assert.IsType(t, []string{}, items, "ListItems should return a slice of strings")
+}
+
+func TestListItems_InvalidCategory(t *testing.T) {
+	// Test invalid category
+	_, err := ListItems("invalid_category", testProviderReq)
+
+	require.Error(t, err, "ListItems should return error for invalid category")
+	assert.Equal(t, "unknown category, must be one of 'resource', 'data', 'ephemeral', or 'function'", err.Error(), "Error message should match expected")
+}
+
+func TestListItems_NonExistentProvider(t *testing.T) {
+	// Test listing for non-existent provider
+	_, err := ListItems("resource", ProviderRequest{
+		ProviderNamespace: "nonexistent",
+		ProviderName:      "invalid-provider",
+		ProviderVersion:   "1.0.0",
+	})
+
+	require.Error(t, err, "ListItems should return error for non-existent provider")
+}
+
+func TestQuerySchema_LatestVersion(t *testing.T) {
+	// Mock getLatestVersion to return a known version that exists in the registry
+	stubs := gostub.Stub(&getLatestVersion, func(namespace, providerType string) (string, error) {
+		if namespace == "hashicorp" && providerType == "azurerm" {
+			return "4.42.0", nil
+		}
+		return "", assert.AnError
+	})
+	defer stubs.Reset()
+
+	// Provider request without version for testing latest version resolution
+	// Test querying with empty version (should resolve to mocked version)
+	result, err := QuerySchema("resource", "azurerm_resource_group", "", ProviderRequest{
+		ProviderNamespace: "hashicorp",
+		ProviderName:      "azurerm",
+		ProviderVersion:   "", // Empty version should resolve to mocked version
+	})
+
+	require.NoError(t, err, "QuerySchema should not return an error when resolving latest version")
+	require.NotEmpty(t, result, "QuerySchema should not return empty result for latest version")
+
+	// Verify the result is valid JSON
+	var schema tfjson.Schema
+	err = json.Unmarshal([]byte(result), &schema)
+	require.NoError(t, err, "Latest version result should be valid JSON")
+
+	// Verify it's a proper schema structure
+	require.NotNil(t, schema.Block, "Schema block should not be nil")
+
+	// Check for expected attributes in azurerm_resource_group
+	expectedAttributes := []string{"name", "location"}
+	for _, attr := range expectedAttributes {
+		assert.Contains(t, schema.Block.Attributes, attr, "Expected attribute %s should be found in schema", attr)
+	}
+}
+
+func TestListItems_LatestVersion(t *testing.T) {
+	// Mock getLatestVersion to return a known version that exists in the registry
+	stubs := gostub.Stub(&getLatestVersion, func(namespace, providerType string) (string, error) {
+		if namespace == "hashicorp" && providerType == "azurerm" {
+			return "4.42.0", nil
+		}
+		return "", assert.AnError
+	})
+	defer stubs.Reset()
+
+	// Provider request without version for testing latest version resolution
+	// Test listing resources with latest version resolution
+	items, err := ListItems("resource", ProviderRequest{
+		ProviderNamespace: "hashicorp",
+		ProviderName:      "azurerm",
+		ProviderVersion:   "", // Empty version should resolve to mocked version
+	})
+
+	require.NoError(t, err, "ListItems should not return an error")
+	require.NotEmpty(t, items, "ListItems should return at least one resource")
+
+	// Check that common azurerm resources are in the list
+	assert.Contains(t, items, "azurerm_resource_group", "Expected azurerm_resource_group should be in the list")
 }
