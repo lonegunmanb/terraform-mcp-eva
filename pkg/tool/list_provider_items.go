@@ -12,7 +12,7 @@ type ListItemsParam struct {
 	Category          string `json:"category" jsonschema:"Terraform item type to list, possible values: resource, data, ephemeral, function"`
 	ProviderNamespace string `json:"namespace" jsonschema:"Provider namespace (e.g., 'hashicorp', 'Azure'). If not set, defaults to 'hashicorp'."`
 	ProviderName      string `json:"name" jsonschema:"Provider name (e.g., 'aws', 'azurerm', 'azapi'). Required parameter."`
-	ProviderVersion   string `json:"version,omitempty" jsonschema:"Provider version (e.g., '5.0.0', '4.39.0'). If not specified, the latest version will be used."`
+	ProviderVersion   string `json:"version,omitempty" jsonschema:"Provider version or version constraint (e.g., '5.0.0', '~> 4.0', '>= 3.0, < 5.0'). If not specified, the latest version will be used."`
 }
 
 func ListProviderItems(ctx context.Context, cc *mcp.ServerSession, params *mcp.CallToolParamsFor[ListItemsParam]) (*mcp.CallToolResultFor[any], error) {

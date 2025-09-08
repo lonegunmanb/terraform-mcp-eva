@@ -15,7 +15,7 @@ type SchemaQueryParam struct {
 	Path              string `json:"path,omitempty" jsonschema:"JSON path to query the resource schema, for example: default_node_pool.upgrade_settings, if not specified, the whole resource schema will be returned. Note: path queries are not supported for function schemas"`
 	ProviderNamespace string `json:"namespace" jsonschema:"Provider namespace (e.g., 'hashicorp', 'Azure'). If not set, defaults to 'hashicorp'."`
 	ProviderName      string `json:"name" jsonschema:"Provider name (e.g., 'aws', 'azurerm', 'azapi'). If not provided, will be inferred from the type parameter (except for functions)."`
-	ProviderVersion   string `json:"version,omitempty" jsonschema:"Provider version (e.g., '5.0.0', '4.39.0'). If not specified, the latest version will be used."`
+	ProviderVersion   string `json:"version,omitempty" jsonschema:"Provider version or version constraint (e.g., '5.0.0', '~> 4.0', '>= 3.0, < 5.0'). If not specified, the latest version will be used."`
 }
 
 var validCategories = map[string]struct{}{
