@@ -227,7 +227,7 @@ func RegisterMcpServer(s *mcp.Server) {
 				},
 				"version": {
 					Type:        "string",
-					Description: "Provider version (e.g., '5.0.0', '4.39.0'). If not specified, the latest version will be used.",
+					Description: "Provider version or version constraint (e.g., '5.0.0', '~> 4.0', '>= 3.0, < 5.0'). If not specified, the latest version will be used.",
 				},
 				"namespace": {
 					Type:        "string",
@@ -269,7 +269,7 @@ func RegisterMcpServer(s *mcp.Server) {
 				},
 				"version": {
 					Type:        "string",
-					Description: "Provider version (e.g., '5.0.0', '4.39.0'). If not specified, the latest version will be used.",
+					Description: "Provider version or version constraint (e.g., '5.0.0', '~> 4.0', '>= 3.0, < 5.0'). If not specified, the latest version will be used.",
 				},
 			},
 			Required: []string{"category", "name"},
