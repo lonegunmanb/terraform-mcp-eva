@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net/http"
 	"strings"
 	"sync"
 
@@ -33,20 +32,15 @@ func getServer() *tfpluginschema.Server {
 func QuerySchema(category, name, path string, providerReq ProviderRequest) (string, error) {
 	server := getServer()
 
-	// Resolve version to latest if empty
-	version, err := versionOrLatest(providerReq.ProviderNamespace, providerReq.ProviderName, providerReq.ProviderVersion)
-	if err != nil {
-		return "", fmt.Errorf("failed to resolve provider version: %w", err)
-	}
-
 	request := tfpluginschema.Request{
 		Namespace: providerReq.ProviderNamespace,
 		Name:      providerReq.ProviderName,
-		Version:   version,
+		Version:   providerReq.ProviderVersion,
 	}
 
 	var schema *tfjson.Schema
 	var functionSignature *tfjson.FunctionSignature
+	var err error
 
 	switch category {
 	case "resource":
@@ -89,20 +83,14 @@ func QuerySchema(category, name, path string, providerReq ProviderRequest) (stri
 func ListItems(category string, providerReq ProviderRequest) ([]string, error) {
 	server := getServer()
 
-	// Resolve version to latest if empty
-	version, err := versionOrLatest(providerReq.ProviderNamespace, providerReq.ProviderName, providerReq.ProviderVersion)
-	if err != nil {
-		return nil, fmt.Errorf("failed to resolve provider version: %w", err)
-	}
-
 	request := tfpluginschema.Request{
 		Namespace: providerReq.ProviderNamespace,
 		Name:      providerReq.ProviderName,
-		Version:   version,
+		Version:   providerReq.ProviderVersion,
 	}
 
 	var items []string
-
+	var err error
 	switch category {
 	case "resource":
 		items, err = server.ListResources(request)
@@ -164,52 +152,4 @@ func toCompactJson(data interface{}) (string, error) {
 		return "", fmt.Errorf("failed to compact data: %+v", err)
 	}
 	return dst.String(), nil
-}
-
-// CleanupServer cleans up the tfpluginschema server instance
-func CleanupServer() {
-	if serverInstance != nil {
-		serverInstance.Cleanup()
-	}
-}
-
-func versionOrLatest(namespace, providerType, version string) (string, error) {
-	if version == "" {
-		v, err := getLatestVersion(namespace, providerType)
-		if err != nil {
-			return "", err
-		}
-		version = v
-	}
-	return strings.TrimPrefix(version, "v"), nil
-}
-
-var getLatestVersion = func(namespace string, providerType string) (string, error) {
-	url := fmt.Sprintf("https://registry.terraform.io/v1/providers/%s/%s", namespace, providerType)
-
-	resp, err := http.Get(url) // #nosec G107
-	if err != nil {
-		return "", fmt.Errorf("failed to fetch provider info from registry: %w", err)
-	}
-	defer func() {
-		_ = resp.Body.Close()
-	}()
-
-	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("registry API returned status %d for provider %s/%s", resp.StatusCode, namespace, providerType)
-	}
-
-	var providerInfo struct {
-		Tag string `json:"tag"`
-	}
-
-	if err := json.NewDecoder(resp.Body).Decode(&providerInfo); err != nil {
-		return "", fmt.Errorf("failed to decode provider info response: %w", err)
-	}
-
-	if providerInfo.Tag == "" {
-		return "", fmt.Errorf("no tag found in provider info for %s/%s", namespace, providerType)
-	}
-
-	return providerInfo.Tag, nil
 }
