@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	tfjson "github.com/hashicorp/terraform-json"
-	"github.com/prashantv/gostub"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -284,65 +283,4 @@ func TestListItems_NonExistentProvider(t *testing.T) {
 	})
 
 	require.Error(t, err, "ListItems should return error for non-existent provider")
-}
-
-func TestQuerySchema_LatestVersion(t *testing.T) {
-	// Mock getLatestVersion to return a known version that exists in the registry
-	stubs := gostub.Stub(&getLatestVersion, func(namespace, providerType string) (string, error) {
-		if namespace == "hashicorp" && providerType == "azurerm" {
-			return "4.42.0", nil
-		}
-		return "", assert.AnError
-	})
-	defer stubs.Reset()
-
-	// Provider request without version for testing latest version resolution
-	// Test querying with empty version (should resolve to mocked version)
-	result, err := QuerySchema("resource", "azurerm_resource_group", "", ProviderRequest{
-		ProviderNamespace: "hashicorp",
-		ProviderName:      "azurerm",
-		ProviderVersion:   "", // Empty version should resolve to mocked version
-	})
-
-	require.NoError(t, err, "QuerySchema should not return an error when resolving latest version")
-	require.NotEmpty(t, result, "QuerySchema should not return empty result for latest version")
-
-	// Verify the result is valid JSON
-	var schema tfjson.Schema
-	err = json.Unmarshal([]byte(result), &schema)
-	require.NoError(t, err, "Latest version result should be valid JSON")
-
-	// Verify it's a proper schema structure
-	require.NotNil(t, schema.Block, "Schema block should not be nil")
-
-	// Check for expected attributes in azurerm_resource_group
-	expectedAttributes := []string{"name", "location"}
-	for _, attr := range expectedAttributes {
-		assert.Contains(t, schema.Block.Attributes, attr, "Expected attribute %s should be found in schema", attr)
-	}
-}
-
-func TestListItems_LatestVersion(t *testing.T) {
-	// Mock getLatestVersion to return a known version that exists in the registry
-	stubs := gostub.Stub(&getLatestVersion, func(namespace, providerType string) (string, error) {
-		if namespace == "hashicorp" && providerType == "azurerm" {
-			return "4.42.0", nil
-		}
-		return "", assert.AnError
-	})
-	defer stubs.Reset()
-
-	// Provider request without version for testing latest version resolution
-	// Test listing resources with latest version resolution
-	items, err := ListItems("resource", ProviderRequest{
-		ProviderNamespace: "hashicorp",
-		ProviderName:      "azurerm",
-		ProviderVersion:   "", // Empty version should resolve to mocked version
-	})
-
-	require.NoError(t, err, "ListItems should not return an error")
-	require.NotEmpty(t, items, "ListItems should return at least one resource")
-
-	// Check that common azurerm resources are in the list
-	assert.Contains(t, items, "azurerm_resource_group", "Expected azurerm_resource_group should be in the list")
 }

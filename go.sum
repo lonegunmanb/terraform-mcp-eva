@@ -65,6 +65,8 @@ github.com/lonegunmanb/terraform-azapi-schema/v2 v2.5.0 h1:KyCF1IB/8WoBh7HWPp6Os
 github.com/lonegunmanb/terraform-azapi-schema/v2 v2.5.0/go.mod h1:RGAwSWjCTD0m2SNZxKShVZSe4XxjkngQFCHmeMP3ktw=
 github.com/matt-FFFFFF/tfpluginschema v0.4.0 h1:suI2KZFqX99s7Itk5JyqdIzyKWafE4Nf1Qhq+j1JaWA=
 github.com/matt-FFFFFF/tfpluginschema v0.4.0/go.mod h1:jW1Izw5fJT73YH48mBwzjCXGWT71KXxT7we9tcCH4Oo=
+github.com/matt-FFFFFF/tfpluginschema v0.5.0 h1:G5RAHPFsP46yIkddSmMCzVZ0M/QwR+vPD9Uf378sV6k=
+github.com/matt-FFFFFF/tfpluginschema v0.5.0/go.mod h1:8rXzXlIcURD88FM8XIcelmXrte8L/nPremy963DR4oI=
 github.com/mattn/go-colorable v0.1.9/go.mod h1:u6P/XSegPjTcexA+o6vUJrdnUu04hMope9wVRipJSqc=
 github.com/mattn/go-colorable v0.1.12/go.mod h1:u5H1YNBxpqRaxsYJYSkiCWKzEfiAb1Gb520KVy5xxl4=
 github.com/mattn/go-colorable v0.1.14 h1:9A9LHSqF/7dyVVX6g0U9cwm9pG3kP9gSzcuIPHPsaIE=
