@@ -66,3 +66,18 @@ func TestInferProviderNameFromType(t *testing.T) {
 		})
 	}
 }
+
+func TestValidCategories(t *testing.T) {
+	expectedCategories := []string{"resource", "data", "ephemeral", "function", "provider"}
+
+	for _, category := range expectedCategories {
+		t.Run(category, func(t *testing.T) {
+			_, ok := validCategories[category]
+			assert.True(t, ok, "Category %s should be valid", category)
+		})
+	}
+
+	// Test invalid category
+	_, ok := validCategories["invalid"]
+	assert.False(t, ok, "Invalid category should not be in validCategories")
+}

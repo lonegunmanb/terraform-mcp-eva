@@ -21,19 +21,15 @@ func ListProviderItems(ctx context.Context, cc *mcp.ServerSession, params *mcp.C
 	name := params.Arguments.ProviderName
 	version := params.Arguments.ProviderVersion
 
-	if _, ok := validCategories[category]; !ok {
-		return nil, fmt.Errorf("invalid category: %s", category)
+	// Use validator for parameter validation
+	validator := NewListProviderItemsValidator()
+
+	if err := validator.ValidateParams(category, namespace, name, version); err != nil {
+		return nil, err
 	}
 
-	// Default namespace to hashicorp if not provided
-	if namespace == "" {
-		namespace = "hashicorp"
-	}
-
-	// Provider name is always required
-	if name == "" {
-		return nil, fmt.Errorf("provider name is required")
-	}
+	// Normalize namespace using validator
+	namespace = validator.NormalizeNamespace(namespace)
 
 	providerReq := tfschema.ProviderRequest{
 		ProviderNamespace: namespace,

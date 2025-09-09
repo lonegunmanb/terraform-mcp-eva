@@ -138,7 +138,7 @@ func TestQuerySchema_InvalidCategory(t *testing.T) {
 
 	require.Error(t, err, "Should return error for invalid category")
 
-	expectedError := "unknown schema category, must be one of 'resource', 'data', 'ephemeral', or 'function'"
+	expectedError := "unknown schema category, must be one of 'resource', 'data', 'ephemeral', 'function', or 'provider'"
 	assert.Equal(t, expectedError, err.Error(), "Error message should match expected")
 }
 
@@ -283,4 +283,36 @@ func TestListItems_NonExistentProvider(t *testing.T) {
 	})
 
 	require.Error(t, err, "ListItems should return error for non-existent provider")
+}
+
+func TestQuerySchema_ProviderCategory(t *testing.T) {
+	// Test querying provider schema using QuerySchema function
+	schema, err := QuerySchema("provider", "", "", testProviderReq)
+	require.NoError(t, err, "QuerySchema with provider category should not return error")
+	require.NotEmpty(t, schema, "Schema should not be empty")
+
+	// Validate JSON format
+	var result map[string]interface{}
+	err = json.Unmarshal([]byte(schema), &result)
+	require.NoError(t, err, "Schema should be valid JSON")
+
+	// Print the schema structure for debugging
+
+	t.Logf("Provider schema from QuerySchema: %s", schema[:min(500, len(schema))])
+}
+
+func TestQuerySchema_Provider_PathSupported(t *testing.T) {
+	// Test that path queries work for provider schemas
+	schema, err := QuerySchema("provider", "", "client_certificate", testProviderReq)
+	require.NoError(t, err, "QuerySchema should support path queries for provider category")
+	require.NotEmpty(t, schema, "Schema should not be empty")
+
+	// Validate JSON format
+	var result map[string]interface{}
+	err = json.Unmarshal([]byte(schema), &result)
+	require.NoError(t, err, "Schema should be valid JSON")
+
+	// Should contain the attribute definition (not the key name)
+	assert.Contains(t, schema, "Base64 encoded")
+	assert.Contains(t, schema, "Client Certificate")
 }

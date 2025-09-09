@@ -214,12 +214,12 @@ func RegisterMcpServer(s *mcp.Server) {
 			Properties: map[string]*jsonschema.Schema{
 				"category": {
 					Type:        "string",
-					Description: "Terraform block type, possible values: resource, data, ephemeral, function",
-					Enum:        []interface{}{"resource", "data", "ephemeral", "function"},
+					Description: "Terraform block type, possible values: resource, data, ephemeral, function, provider",
+					Enum:        []interface{}{"resource", "data", "ephemeral", "function", "provider"},
 				},
 				"type": {
 					Type:        "string",
-					Description: "Terraform block type like: azurerm_resource_group or function name like: can",
+					Description: "Terraform block type like: azurerm_resource_group or function name like: can. Not required for provider category.",
 				},
 				"path": {
 					Type:        "string",
@@ -235,12 +235,12 @@ func RegisterMcpServer(s *mcp.Server) {
 				},
 				"name": {
 					Type:        "string",
-					Description: "Provider name (e.g., 'aws', 'azurerm', 'azapi'). If not provided, will be inferred from the type parameter (except for functions).",
+					Description: "Provider name (e.g., 'aws', 'azurerm', 'azapi'). Required for provider category. For other categories, if not provided, will be inferred from the type parameter (except for functions).",
 				},
 			},
-			Required: []string{"category", "type"},
+			Required: []string{"category"},
 		},
-		Description: "[You should use this tool before you try resolveProviderDocID]Query fine grained Terraform resource schema by `category`, `name` and optional `path`. The returned value is a json string representing the resource schema, including attribute descriptions, which can be used in Terraform provider schema. If you're querying schema information about specified attribute or nested block schema of a resource from any provider, this tool should have higher priority. Supports all providers available in the Terraform Registry through dynamic schema loading.",
+		Description: "[You should use this tool before you try resolveProviderDocID]Query fine grained Terraform schema by `category`, `name` and optional `path`. For provider category, returns the complete provider schema including configuration options. For other categories (resource, data, ephemeral, function), returns specific resource/data source/function schema. The returned value is a json string representing the schema, including attribute descriptions, which can be used in Terraform provider schema. If you're querying schema information about providers or specified attribute or nested block schema of a resource from any provider, this tool should have higher priority. Supports all providers available in the Terraform Registry through dynamic schema loading.",
 		Name:        "query_terraform_schema",
 	}, tool.QuerySchema)
 
