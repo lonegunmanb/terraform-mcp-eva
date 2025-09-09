@@ -49,7 +49,7 @@ func QuerySchema(ctx context.Context, cc *mcp.ServerSession, params *mcp.CallToo
 
 	// Infer provider name if needed
 	var err error
-	name, err = validator.InferProviderName(category, t, name)
+	name, err = inferProviderName(category, t, name)
 	if err != nil {
 		return nil, err
 	}
@@ -76,4 +76,24 @@ func QuerySchema(ctx context.Context, cc *mcp.ServerSession, params *mcp.CallToo
 			},
 		},
 	}, nil
+}
+
+// inferProviderName attempts to infer provider name from resource type if not provided
+func inferProviderName(category, resourceType, providerName string) (string, error) {
+	if providerName != "" {
+		return providerName, nil
+	}
+
+	// For function and provider categories, name must be explicitly provided
+	if category == "function" || category == "provider" {
+		return "", fmt.Errorf("provider name is required when category is '%s'", category)
+	}
+
+	// Extract provider name from type (e.g., "aws_ec2_instance" -> "aws")
+	inferredName := inferProviderNameFromType(resourceType)
+	if inferredName == "" {
+		return "", fmt.Errorf("could not infer provider name from type '%s', please provide the 'name' parameter", resourceType)
+	}
+
+	return inferredName, nil
 }

@@ -53,26 +53,6 @@ func (v *SchemaQueryValidator) NormalizeNamespace(namespace string) string {
 	return namespace
 }
 
-// InferProviderName attempts to infer provider name from resource type if not provided
-func (v *SchemaQueryValidator) InferProviderName(category, resourceType, providerName string) (string, error) {
-	if providerName != "" {
-		return providerName, nil
-	}
-
-	// For function and provider categories, name must be explicitly provided
-	if category == "function" || category == "provider" {
-		return "", fmt.Errorf("provider name is required when category is '%s'", category)
-	}
-
-	// Extract provider name from type (e.g., "aws_ec2_instance" -> "aws")
-	inferredName := inferProviderNameFromType(resourceType)
-	if inferredName == "" {
-		return "", fmt.Errorf("could not infer provider name from type '%s', please provide the 'name' parameter", resourceType)
-	}
-
-	return inferredName, nil
-}
-
 var validCategories = map[string]struct{}{
 	"resource":  {},
 	"data":      {},
