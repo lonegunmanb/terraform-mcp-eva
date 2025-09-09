@@ -51,12 +51,14 @@ func QuerySchema(category, name, path string, providerReq ProviderRequest) (stri
 		schema, err = server.GetEphemeralResourceSchema(request, name)
 	case "function":
 		functionSignature, err = server.GetFunctionSchema(request, name)
+	case "provider":
+		schema, err = server.GetProviderSchema(request)
 	default:
-		return "", errors.New("unknown schema category, must be one of 'resource', 'data', 'ephemeral', or 'function'")
+		return "", errors.New("unknown schema category, must be one of 'resource', 'data', 'ephemeral', 'function', or 'provider'")
 	}
 
 	if err != nil {
-		return "", fmt.Errorf("failed to get %s schema for %s: %w", category, name, err)
+		return "", fmt.Errorf("failed to get %s schema for %s/%s: %w", category, providerReq.ProviderNamespace, providerReq.ProviderName, err)
 	}
 
 	// Handle function signatures differently from schemas
