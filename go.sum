@@ -61,8 +61,8 @@ github.com/lonegunmanb/hclmerge v0.0.0-20250729004239-c2ef69683bf3 h1:+/jGtd4ieU
 github.com/lonegunmanb/hclmerge v0.0.0-20250729004239-c2ef69683bf3/go.mod h1:eRsXwAExxRA61w7UJ94xWCoFhvjbwER92msMCcCeDDw=
 github.com/lonegunmanb/newres/v3 v3.0.0-20250716024827-64a0d3c6604c h1:kyD6/zHVazbYd5ZECe9LwVzJY0tbv3HOs8YAp7vrggk=
 github.com/lonegunmanb/newres/v3 v3.0.0-20250716024827-64a0d3c6604c/go.mod h1:QuKFefBBbtNxo5hxbO6JKsJB3hVgDvF+/OeGapvhtoo=
-github.com/lonegunmanb/terraform-azapi-schema/v2 v2.5.0 h1:KyCF1IB/8WoBh7HWPp6Osq9gMpknL9Of4ESsUwaHwyw=
-github.com/lonegunmanb/terraform-azapi-schema/v2 v2.5.0/go.mod h1:RGAwSWjCTD0m2SNZxKShVZSe4XxjkngQFCHmeMP3ktw=
+github.com/lonegunmanb/terraform-azapi-schema/v2 v2.7.0 h1:3dv51hvQ2x3Qrrx6bJ5yuFEYPDnlknGnGnqz+2da8W0=
+github.com/lonegunmanb/terraform-azapi-schema/v2 v2.7.0/go.mod h1:RGAwSWjCTD0m2SNZxKShVZSe4XxjkngQFCHmeMP3ktw=
 github.com/matt-FFFFFF/tfpluginschema v0.6.1 h1:PMJ63l5W59V86TJJI+XM0XPuHJZw7bggHBjGB/x6O88=
 github.com/matt-FFFFFF/tfpluginschema v0.6.1/go.mod h1:8rXzXlIcURD88FM8XIcelmXrte8L/nPremy963DR4oI=
 github.com/mattn/go-colorable v0.1.9/go.mod h1:u6P/XSegPjTcexA+o6vUJrdnUu04hMope9wVRipJSqc=
