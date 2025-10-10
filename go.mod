@@ -14,7 +14,7 @@ require (
 	github.com/ms-henglu/go-azure-types v0.0.0-20250710084755-17c1d17a45e4
 	github.com/prashantv/gostub v1.1.0
 	github.com/spf13/afero v1.15.0
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.1
 	github.com/zclconf/go-cty v1.17.0
 	golang.org/x/oauth2 v0.31.0
 )
