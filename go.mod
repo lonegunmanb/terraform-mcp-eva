@@ -8,7 +8,7 @@ require (
 	github.com/hashicorp/terraform-json v0.27.2
 	github.com/lonegunmanb/hclmerge v0.0.0-20250729004239-c2ef69683bf3
 	github.com/lonegunmanb/newres/v3 v3.0.0-20250716024827-64a0d3c6604c
-	github.com/lonegunmanb/terraform-azapi-schema/v2 v2.5.0
+	github.com/lonegunmanb/terraform-azapi-schema/v2 v2.7.0
 	github.com/matt-FFFFFF/tfpluginschema v0.6.1
 	github.com/modelcontextprotocol/go-sdk v0.2.0
 	github.com/ms-henglu/go-azure-types v0.0.0-20250710084755-17c1d17a45e4
